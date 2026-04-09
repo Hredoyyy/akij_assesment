@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  EMPLOYER
+  CANDIDATE
+}
+
+enum QuestionType {
+  CHECKBOX
+  RADIO
+  TEXT
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  TIMED_OUT
+  VIOLATION_TERMINATED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         Role     @default(CANDIDATE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  exams    Exam[]        @relation("EmployerExams")
+  attempts ExamAttempt[] @relation("CandidateAttempts")
+}
+
+model Exam {
+  id              String   @id @default(uuid())
+  title           String
+  totalCandidates Int
+  totalSlots      Int
+  duration        Int
+  negativeMarking Boolean  @default(false)
+  employerId      String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employer User          @relation("EmployerExams", fields: [employerId], references: [id])
+  slots    ExamSlot[]
+  attempts ExamAttempt[]
+
+  @@index([employerId])
+}
+
+model ExamSlot {
+  id         String   @id @default(uuid())
+  examId     String
+  slotNumber Int
+  startTime  DateTime
+  endTime    DateTime
+
+  exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questionSet QuestionSet?
+  attempts    ExamAttempt[]
+
+  @@unique([examId, slotNumber])
+  @@index([examId])
+  @@index([startTime, endTime])
+}
+
+model QuestionSet {
+  id         String @id @default(uuid())
+  examSlotId String @unique
+  name       String
+
+  examSlot  ExamSlot    @relation(fields: [examSlotId], references: [id], onDelete: Cascade)
+  questions Question[]
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  questionSetId String
+  title         String
+  type          QuestionType
+  points        Float        @default(1)
+  order         Int          @default(0)
+
+  questionSet QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade)
+  options     Option[]
+  answers     Answer[]
+
+  @@index([questionSetId])
+}
+
+model Option {
+  id         String  @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model ExamAttempt {
+  id          String        @id @default(uuid())
+  candidateId String
+  examId      String
+  examSlotId  String
+  startedAt   DateTime      @default(now())
+  submittedAt DateTime?
+  score       Float?
+  violations  Int           @default(0)
+  status      AttemptStatus @default(IN_PROGRESS)
+
+  candidate User      @relation("CandidateAttempts", fields: [candidateId], references: [id])
+  exam      Exam      @relation(fields: [examId], references: [id])
+  examSlot  ExamSlot  @relation(fields: [examSlotId], references: [id])
+  answers   Answer[]
+
+  @@unique([candidateId, examId])
+  @@index([candidateId])
+  @@index([examId])
+  @@index([examSlotId])
+}
+
+model Answer {
+  id                String   @id @default(uuid())
+  attemptId         String
+  questionId        String
+  selectedOptionIds String[]
+  textAnswer        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  attempt  ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id])
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+}
