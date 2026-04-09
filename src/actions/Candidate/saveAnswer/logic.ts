@@ -16,7 +16,14 @@ export async function saveAnswerAction(
       candidateId: payload.candidateId,
     },
     select: {
+      id: true,
       status: true,
+      startedAt: true,
+      exam: {
+        select: {
+          duration: true,
+        },
+      },
     },
   });
 
@@ -31,6 +38,24 @@ export async function saveAnswerAction(
     return {
       success: false,
       error: "Attempt is not active.",
+    };
+  }
+
+  const durationSeconds = attempt.exam.duration * 60;
+  const elapsedSeconds = Math.floor((Date.now() - attempt.startedAt.getTime()) / 1000);
+
+  if (elapsedSeconds >= durationSeconds) {
+    await prisma.examAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        status: "TIMED_OUT",
+        submittedAt: new Date(),
+      },
+    });
+
+    return {
+      success: false,
+      error: "Attempt timed out.",
     };
   }
 

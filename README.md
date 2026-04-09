@@ -36,7 +36,25 @@ Next.js 16 + TypeScript + Tailwind CSS v4 + Prisma 7 blueprint with clean archit
 - Milestone 1 completed.
 - Milestone 2 completed (auth forms + role-aware redirects).
 - Milestone 3 completed (employer dashboard + dedicated test creation flow).
-- Milestone 4 in progress (candidate runtime APIs, timer, violations, progressive answers).
+- Milestone 4 completed (candidate runtime APIs, timer, violations, progressive answers, offline queue baseline).
+- Milestone 5 in progress (typecheck/check scripts, route loading states, deployment guidance).
+
+## Deployment Notes (Neon/Supabase)
+
+1. Provision a PostgreSQL database in Neon or Supabase.
+2. Set production `DATABASE_URL` to the pooled/primary connection string from your provider.
+3. Set a strong production `SESSION_PASSWORD` (minimum 32 characters).
+4. Run migration in deployment environment:
+
+```bash
+pnpm db:migrate
+```
+
+5. Optionally generate Prisma client explicitly in CI:
+
+```bash
+pnpm db:generate
+```
 
 ## Local Setup
 

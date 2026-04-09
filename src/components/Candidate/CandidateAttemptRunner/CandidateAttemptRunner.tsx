@@ -1,8 +1,8 @@
 "use client";
 
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,11 +37,6 @@ type AttemptRuntime = {
   answers: RuntimeAnswer[];
 };
 
-type RuntimeResponse = {
-  success: true;
-  data: AttemptRuntime;
-};
-
 type SaveAnswerInput = {
   attemptId: string;
   questionId: string;
@@ -51,6 +46,7 @@ type SaveAnswerInput = {
 
 type CandidateAttemptRunnerProps = {
   attemptId: string;
+  initialRuntime: AttemptRuntime;
 };
 
 const toTimeText = (seconds: number) => {
@@ -61,35 +57,21 @@ const toTimeText = (seconds: number) => {
   return `${min}:${sec}`;
 };
 
-export function CandidateAttemptRunner({ attemptId }: CandidateAttemptRunnerProps) {
+export function CandidateAttemptRunner({
+  attemptId,
+  initialRuntime,
+}: CandidateAttemptRunnerProps) {
   const router = useRouter();
-  const [runtime, setRuntime] = useState<AttemptRuntime | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [runtime, setRuntime] = useState<AttemptRuntime>(initialRuntime);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [answerState, setAnswerState] = useState<Record<string, RuntimeAnswer>>({});
+  const [answerState, setAnswerState] = useState<Record<string, RuntimeAnswer>>(
+    initialRuntime.answers.reduce<Record<string, RuntimeAnswer>>((acc, answer) => {
+      acc[answer.questionId] = answer;
+      return acc;
+    }, {}),
+  );
 
   const queueKey = useMemo(() => `attempt-${attemptId}-offline-answers`, [attemptId]);
-
-  const fetchRuntime = useCallback(async () => {
-    const response = await axios.get<RuntimeResponse>(`/api/candidate/attempts/${attemptId}`);
-    setRuntime(response.data.data);
-    setAnswerState(
-      response.data.data.answers.reduce<Record<string, RuntimeAnswer>>((acc, answer) => {
-        acc[answer.questionId] = answer;
-        return acc;
-      }, {}),
-    );
-  }, [attemptId]);
-
-  useEffect(() => {
-    void fetchRuntime().catch((requestError: unknown) => {
-      if (requestError instanceof AxiosError) {
-        setError(requestError.response?.data?.error ?? "Unable to load exam runtime.");
-      } else {
-        setError("Unable to load exam runtime.");
-      }
-    });
-  }, [fetchRuntime]);
 
   const saveAnswer = useCallback(async (payload: SaveAnswerInput) => {
     await axios.post("/api/candidate/answers", payload);
@@ -111,10 +93,63 @@ export function CandidateAttemptRunner({ attemptId }: CandidateAttemptRunnerProp
     [attemptId, router],
   );
 
+  const updateAnswer = async (payload: SaveAnswerInput) => {
+    setAnswerState((prev) => ({
+      ...prev,
+      [payload.questionId]: {
+        questionId: payload.questionId,
+        selectedOptionIds: payload.selectedOptionIds,
+        textAnswer: payload.textAnswer ?? null,
+      },
+    }));
+
+    try {
+      await saveAnswer(payload);
+    } catch {
+      enqueue(payload);
+    }
+  };
+
+  return (
+    <AttemptRuntimeView
+      key={runtime.attemptId}
+      attemptId={attemptId}
+      runtime={runtime}
+      answerState={answerState}
+      isSubmitting={isSubmitting}
+      setIsSubmitting={setIsSubmitting}
+      submitAttempt={submitAttempt}
+      setRuntime={setRuntime}
+      updateAnswer={updateAnswer}
+    />
+  );
+}
+
+type AttemptRuntimeViewProps = {
+  attemptId: string;
+  runtime: AttemptRuntime;
+  answerState: Record<string, RuntimeAnswer>;
+  isSubmitting: boolean;
+  setIsSubmitting: (value: boolean) => void;
+  submitAttempt: (status: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED") => Promise<void>;
+  setRuntime: React.Dispatch<React.SetStateAction<AttemptRuntime>>;
+  updateAnswer: (payload: SaveAnswerInput) => Promise<void>;
+};
+
+function AttemptRuntimeView({
+  attemptId,
+  runtime,
+  answerState,
+  isSubmitting,
+  setIsSubmitting,
+  submitAttempt,
+  setRuntime,
+  updateAnswer,
+}: AttemptRuntimeViewProps) {
   const { remainingSeconds } = useExamTimer({
-    initialSeconds: runtime?.remainingSeconds ?? 0,
+    initialSeconds: runtime.remainingSeconds,
     onExpire: async () => {
-      if (!runtime || runtime.status !== "IN_PROGRESS") {
+      if (runtime.status !== "IN_PROGRESS") {
         return;
       }
 
@@ -123,9 +158,9 @@ export function CandidateAttemptRunner({ attemptId }: CandidateAttemptRunnerProp
   });
 
   useBehaviorTracking({
-    enabled: runtime?.status === "IN_PROGRESS",
+    enabled: runtime.status === "IN_PROGRESS",
     onViolation: async () => {
-      if (!runtime || runtime.status !== "IN_PROGRESS") {
+      if (runtime.status !== "IN_PROGRESS") {
         return;
       }
 
@@ -147,31 +182,6 @@ export function CandidateAttemptRunner({ attemptId }: CandidateAttemptRunnerProp
       );
     },
   });
-
-  const updateAnswer = async (payload: SaveAnswerInput) => {
-    setAnswerState((prev) => ({
-      ...prev,
-      [payload.questionId]: {
-        questionId: payload.questionId,
-        selectedOptionIds: payload.selectedOptionIds,
-        textAnswer: payload.textAnswer ?? null,
-      },
-    }));
-
-    try {
-      await saveAnswer(payload);
-    } catch {
-      enqueue(payload);
-    }
-  };
-
-  if (error) {
-    return <p className="text-sm text-rose-600">{error}</p>;
-  }
-
-  if (!runtime) {
-    return <p className="text-sm text-slate-600">Loading attempt...</p>;
-  }
 
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

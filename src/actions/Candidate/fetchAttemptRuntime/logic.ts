@@ -92,13 +92,30 @@ export async function fetchAttemptRuntimeAction(
   const elapsedSeconds = Math.floor((Date.now() - attempt.startedAt.getTime()) / 1000);
   const remainingSeconds = Math.max(0, durationSeconds - elapsedSeconds);
 
+  let resolvedStatus = attempt.status;
+
+  if (attempt.status === "IN_PROGRESS" && remainingSeconds === 0) {
+    const timedOutAttempt = await prisma.examAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        status: "TIMED_OUT",
+        submittedAt: new Date(),
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    resolvedStatus = timedOutAttempt.status;
+  }
+
   return {
     success: true,
     data: {
       attemptId: attempt.id,
       examId: attempt.exam.id,
       examTitle: attempt.exam.title,
-      status: attempt.status,
+      status: resolvedStatus,
       startedAt: attempt.startedAt,
       durationMinutes: attempt.exam.duration,
       remainingSeconds,
