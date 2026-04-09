@@ -143,7 +143,7 @@ export function SignUpForm() {
       <button
         type="submit"
         disabled={form.formState.isSubmitting}
-        className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {form.formState.isSubmitting ? "Creating account..." : "Create Account"}
       </button>

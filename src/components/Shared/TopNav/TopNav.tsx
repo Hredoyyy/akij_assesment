@@ -1,22 +1,38 @@
+import Image from "next/image";
 import Link from "next/link";
 
-export function TopNav() {
+import { getCurrentUser } from "@/lib/auth";
+import { getDashboardPathByRole } from "@/lib/routes";
+
+import { HeaderTitle } from "../HeaderTitle/HeaderTitle";
+import { UserProfileMenu } from "../UserProfileMenu/UserProfileMenu";
+
+export async function TopNav() {
+  const user = await getCurrentUser();
+  const homeHref = user ? getDashboardPathByRole(user.role) : "/";
+
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="text-lg font-semibold text-slate-900">
-          Assessment Platform
-        </Link>
-        <div className="flex items-center gap-4 text-sm font-medium text-slate-700">
-          <Link href="/sign-in" className="hover:text-slate-900">
-            Sign In
+    <header className="app-header">
+      <nav className="app-header-inner" aria-label="Primary">
+        <div className="app-header-left">
+          <Link href={homeHref} className="app-brand-link" aria-label="Go to dashboard home">
+            <Image
+              src="/header_logo.svg"
+              alt="Akij Resource logo"
+              width={116}
+              height={32}
+              className="app-brand-logo"
+              priority
+            />
           </Link>
-          <Link
-            href="/sign-up"
-            className="rounded-full bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
-          >
-            Sign Up
-          </Link>
+        </div>
+
+        <HeaderTitle href={homeHref} />
+
+        <div className="app-header-right">
+          {user ? (
+            <UserProfileMenu user={user} />
+          ) : null}
         </div>
       </nav>
     </header>
