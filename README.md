@@ -34,7 +34,8 @@ Next.js 16 + TypeScript + Tailwind CSS v4 + Prisma 7 blueprint with clean archit
 ## Current Status
 
 - Milestone 1 completed.
-- Milestone 2 in progress (auth forms + role-aware redirect baseline added).
+- Milestone 2 completed (auth forms + role-aware redirects).
+- Milestone 3 in progress (employer exam creation wizard + transactional create API baseline).
 
 ## Local Setup
 
