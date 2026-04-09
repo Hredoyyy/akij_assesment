@@ -46,9 +46,14 @@ export function EmployerDashboardPanel({ exams }: EmployerDashboardPanelProps) {
         </div>
 
         <div className="md:justify-self-end">
-          <Button asChild>
-            <Link href="/employer/tests/new">Add New Test</Link>
-          </Button>
+          <div className="flex items-center justify-end gap-2">
+            <Button asChild variant="outline">
+              <Link href="/candidate/dashboard">Switch to Candidate Dashboard</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/employer/tests/new">Add New Test</Link>
+            </Button>
+          </div>
         </div>
       </header>
 

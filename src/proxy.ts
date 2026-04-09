@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  if (isCandidatePath && user.role !== "CANDIDATE") {
+  if (isCandidatePath && user.role !== "CANDIDATE" && user.role !== "EMPLOYER") {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
