@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types/result";
 
+import { calculateAttemptScore } from "@/actions/Candidate/shared/calculateAttemptScore";
+
 import type { IncrementViolationInput } from "./schema";
 
 type IncrementViolationResult = {
@@ -42,6 +44,7 @@ export async function incrementViolationAction(
 
   const nextViolations = attempt.violations + 1;
   const shouldTerminate = nextViolations >= 3;
+  const score = shouldTerminate ? await calculateAttemptScore(attempt.id) : undefined;
 
   const updated = await prisma.examAttempt.update({
     where: {
@@ -53,6 +56,7 @@ export async function incrementViolationAction(
         ? {
             status: "VIOLATION_TERMINATED",
             submittedAt: new Date(),
+            score,
           }
         : {}),
     },

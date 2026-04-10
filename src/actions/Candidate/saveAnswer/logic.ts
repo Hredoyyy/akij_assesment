@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types/result";
 
+import { calculateAttemptScore } from "@/actions/Candidate/shared/calculateAttemptScore";
+
 import type { SaveAnswerInput } from "./schema";
 
 type SaveAnswerResult = {
@@ -45,11 +47,14 @@ export async function saveAnswerAction(
   const elapsedSeconds = Math.floor((Date.now() - attempt.startedAt.getTime()) / 1000);
 
   if (elapsedSeconds >= durationSeconds) {
+    const score = await calculateAttemptScore(attempt.id);
+
     await prisma.examAttempt.update({
       where: { id: attempt.id },
       data: {
         status: "TIMED_OUT",
         submittedAt: new Date(),
+        score,
       },
     });
 

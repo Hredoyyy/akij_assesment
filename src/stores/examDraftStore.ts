@@ -29,6 +29,7 @@ type BasicInfo = {
   totalCandidates: number;
   totalSlots: number;
   duration: number;
+  negativeMarking: boolean;
 };
 
 type ExamDraftState = {
@@ -69,6 +70,7 @@ const INITIAL_BASIC_INFO: BasicInfo = {
   totalCandidates: 1,
   totalSlots: 1,
   duration: 30,
+  negativeMarking: false,
 };
 
 const randomId = () => crypto.randomUUID();
@@ -117,6 +119,9 @@ const normalizePersistedState = (
     ),
     totalSlots: normalizedTotalSlots,
     duration: Math.max(1, Number(persistedBasicInfo?.duration ?? INITIAL_BASIC_INFO.duration)),
+    negativeMarking: Boolean(
+      persistedBasicInfo?.negativeMarking ?? INITIAL_BASIC_INFO.negativeMarking,
+    ),
   };
 
   const rawSlots = Array.isArray(persistedState?.slots) ? persistedState.slots : [];
@@ -179,6 +184,7 @@ export const useExamDraftStore = create<ExamDraftState>()(
             totalCandidates: Math.max(1, basicInfo.totalCandidates),
             totalSlots: Math.max(1, Math.min(3, basicInfo.totalSlots)),
             duration: Math.max(1, basicInfo.duration),
+            negativeMarking: Boolean(basicInfo.negativeMarking),
           },
           slots: buildSlots(basicInfo.totalSlots, slots),
           activeSlotNumber: 1,
@@ -291,7 +297,7 @@ export const useExamDraftStore = create<ExamDraftState>()(
     }),
     {
       name: "exam-draft-store",
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState) => {
         return normalizePersistedState(persistedState as Partial<ExamDraftState>);

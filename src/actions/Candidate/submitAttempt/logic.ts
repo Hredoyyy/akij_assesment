@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types/result";
 
+import { calculateAttemptScore } from "@/actions/Candidate/shared/calculateAttemptScore";
+
 import type { SubmitAttemptInput } from "./schema";
 
 type SubmitAttemptResult = {
   attemptId: string;
   status: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
+  score: number | null;
 };
 
 export async function submitAttemptAction(
@@ -19,6 +22,7 @@ export async function submitAttemptAction(
     select: {
       id: true,
       status: true,
+      score: true,
     },
   });
 
@@ -35,9 +39,12 @@ export async function submitAttemptAction(
       data: {
         attemptId: attempt.id,
         status: attempt.status === "SUBMITTED" ? "SUBMITTED" : payload.status,
+        score: attempt.score,
       },
     };
   }
+
+  const score = await calculateAttemptScore(attempt.id);
 
   const updated = await prisma.examAttempt.update({
     where: {
@@ -46,10 +53,12 @@ export async function submitAttemptAction(
     data: {
       status: payload.status,
       submittedAt: new Date(),
+      score,
     },
     select: {
       id: true,
       status: true,
+      score: true,
     },
   });
 
@@ -58,6 +67,7 @@ export async function submitAttemptAction(
     data: {
       attemptId: updated.id,
       status: updated.status === "IN_PROGRESS" ? payload.status : updated.status,
+      score: updated.score,
     },
   };
 }

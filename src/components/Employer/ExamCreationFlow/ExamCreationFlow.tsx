@@ -35,6 +35,7 @@ type ExistingExamDraft = {
     totalCandidates: number;
     totalSlots: number;
     duration: number;
+    negativeMarking: boolean;
   };
   slots: Array<{
     slotNumber: number;
@@ -178,7 +179,7 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
         title: basicInfo.title,
         totalCandidates: basicInfo.totalCandidates,
         duration: basicInfo.duration,
-        negativeMarking: false,
+        negativeMarking: Boolean(basicInfo.negativeMarking),
         slots: effectiveSlots.map((slot) => ({
           slotNumber: slot.slotNumber,
           name: `Question Set ${slot.slotNumber}`,
@@ -187,7 +188,7 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
           questions: slot.questions.map((question, index) => ({
             title: question.title,
             type: question.type,
-            points: question.points,
+            points: Number.isFinite(question.points) ? question.points : 1,
             order: index,
             options:
               question.type === "TEXT"
@@ -364,6 +365,16 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
                 value={basicInfo.duration ?? 30}
                 onChange={(event) => setBasicInfo({ duration: Number(event.target.value || 1) })}
               />
+            </div>
+            <div className="md:col-span-2 flex items-center gap-2 mt-2">
+              <input
+                id="negative-marking"
+                type="checkbox"
+                checked={basicInfo.negativeMarking}
+                onChange={(e) => setBasicInfo({ negativeMarking: e.target.checked })}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="negative-marking">Negative Marking</Label>
             </div>
           </div>
 

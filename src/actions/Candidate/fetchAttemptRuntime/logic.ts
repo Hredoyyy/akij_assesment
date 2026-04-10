@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import type { ActionResult } from "@/types/result";
 
+import { calculateAttemptScore } from "@/actions/Candidate/shared/calculateAttemptScore";
+
 import type { FetchAttemptRuntimeInput } from "./schema";
 
 type RuntimeQuestion = {
@@ -95,11 +97,14 @@ export async function fetchAttemptRuntimeAction(
   let resolvedStatus = attempt.status;
 
   if (attempt.status === "IN_PROGRESS" && remainingSeconds === 0) {
+    const score = await calculateAttemptScore(attempt.id);
+
     const timedOutAttempt = await prisma.examAttempt.update({
       where: { id: attempt.id },
       data: {
         status: "TIMED_OUT",
         submittedAt: new Date(),
+        score,
       },
       select: {
         status: true,

@@ -10,6 +10,7 @@ type FetchExamDraftResult = {
     totalCandidates: number;
     totalSlots: number;
     duration: number;
+    negativeMarking: boolean;
   };
   slots: Array<{
     slotNumber: number;
@@ -38,6 +39,7 @@ export async function fetchExamDraftAction(
       totalCandidates: true,
       totalSlots: true,
       duration: true,
+      negativeMarking: true,
       slots: {
         orderBy: {
           slotNumber: "asc",
@@ -87,6 +89,7 @@ export async function fetchExamDraftAction(
         totalCandidates: exam.totalCandidates,
         totalSlots: exam.totalSlots,
         duration: exam.duration,
+        negativeMarking: exam.negativeMarking,
       },
       slots: exam.slots.map((slot) => ({
         slotNumber: slot.slotNumber,
