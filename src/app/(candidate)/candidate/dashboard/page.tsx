@@ -18,10 +18,7 @@ export default async function CandidateDashboardPage() {
   const exams = examsResult.success ? examsResult.data : [];
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Candidate Dashboard</h1>
-      <p className="mt-3 text-slate-600">Start or resume your available assessments.</p>
-
+    <main className="mx-auto w-full max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8">
       <CandidateExamList
         exams={exams.map((exam) => ({
           ...exam,
