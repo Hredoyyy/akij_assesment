@@ -1,5 +1,6 @@
 "use client";
 
+import { ClockFading, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { CandidateRankingDialog } from "@/components/Employer/components/CandidateRankingDialog/CandidateRankingDialog";
@@ -26,18 +27,29 @@ export function EmployerExamCard({ exam }: EmployerExamCardProps) {
       }}
       className="flex w-full max-w-[632px] cursor-pointer flex-col justify-center gap-6 rounded-2xl border border-slate-200 bg-white px-8 py-8"
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         <h3 className="text-xl font-semibold leading-[140%] text-slate-700">{exam.title}</h3>
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm leading-[150%]">
-          <p className="text-slate-500">
-            Candidates: <span className="font-medium text-slate-700">{exam.totalCandidates}</span>
-          </p>
-          <p className="text-slate-500">
-            Question Set: <span className="font-medium text-slate-700">{exam.totalQuestions}</span>
-          </p>
-          <p className="text-slate-500">
-            Exam Slots: <span className="font-medium text-slate-700">{exam.totalSlots}</span>
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-6 text-[16px] leading-[150%] text-slate-500">
+          <div className="flex items-center gap-3">
+            <Users className="h-7 w-7 shrink-0 text-slate-400" strokeWidth={1.8} />
+            <p>
+              Candidates: <span className="font-semibold text-slate-700">{exam.totalCandidates}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <FileText className="h-7 w-7 shrink-0 text-slate-400" strokeWidth={1.8} />
+            <p>
+              Question Set: <span className="font-semibold text-slate-700">{exam.totalQuestionSets}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ClockFading className="h-7 w-7 shrink-0 text-slate-400" strokeWidth={1.8} />
+            <p>
+              Exam Slots: <span className="font-semibold text-slate-700">{exam.totalSlots}</span>
+            </p>
+          </div>
         </div>
       </div>
 

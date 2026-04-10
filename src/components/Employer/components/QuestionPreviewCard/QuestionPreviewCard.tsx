@@ -4,6 +4,7 @@ import { CheckCircle2 } from "lucide-react";
 
 import { QuestionDialog } from "@/components/Employer/QuestionDialog/QuestionDialog";
 import { Button } from "@/components/ui/button";
+import { sanitizeRichTextHtml } from "@/lib/richText";
 import type { DraftQuestion } from "@/stores/examDraftStore";
 
 type QuestionPreviewCardProps = {
@@ -48,7 +49,10 @@ export function QuestionPreviewCard({ question, questionNumber, onEdit, onDelete
         <div className="h-px w-full bg-slate-200" />
 
         <div className="space-y-6">
-          <p className="text-base font-semibold text-black">{question.title}</p>
+          <p
+            className="text-base font-semibold text-black"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(question.title) }}
+          />
 
           {question.type === "TEXT" ? (
             <p className="text-base leading-7 text-slate-700">
@@ -64,12 +68,16 @@ export function QuestionPreviewCard({ question, questionNumber, onEdit, onDelete
                     key={option.id}
                     className="flex items-center justify-between rounded-lg bg-slate-100 px-3 py-3"
                   >
-                    <p className="text-base text-slate-700">{prefix}. {option.text}</p>
+                    <p className="text-base text-slate-700">
+                      <span className="font-medium">{prefix}. </span>
+                      <span dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(option.text) }} />
+                    </p>
                     <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                   </div>
                 ) : (
                   <p key={option.id} className="px-3 text-base text-slate-700">
-                    {prefix}. {option.text}
+                    <span className="font-medium">{prefix}. </span>
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(option.text) }} />
                   </p>
                 );
               })}

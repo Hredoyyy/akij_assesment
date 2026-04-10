@@ -8,6 +8,7 @@ type EmployerExamSummary = {
   title: string;
   totalCandidates: number;
   totalSlots: number;
+  totalQuestionSets: number;
   totalQuestions: number;
   duration: number;
   negativeMarking: boolean;
@@ -84,6 +85,7 @@ export async function fetchEmployerExamsAction(
       title: exam.title,
       totalCandidates: exam.totalCandidates,
       totalSlots: exam.totalSlots,
+      totalQuestionSets: exam.slots.filter((slot) => slot.questionSet !== null).length,
       totalQuestions: exam.slots.reduce(
         (total, slot) => total + (slot.questionSet?.questions.length ?? 0),
         0,

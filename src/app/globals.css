@@ -278,6 +278,22 @@ h6 {
   gap: 8px;
 }
 
+.question-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+}
+
+.candidate-rich-text p,
+.candidate-rich-text ul,
+.candidate-rich-text ol {
+  margin: 0;
+}
+
+.candidate-rich-text ul,
+.candidate-rich-text ol {
+  padding-left: 1rem;
+}
+
 @media (min-width: 640px) {
   .app-header-inner {
     padding: 0 24px;

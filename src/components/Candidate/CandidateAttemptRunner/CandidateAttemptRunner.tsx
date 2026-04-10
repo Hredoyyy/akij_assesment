@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useBehaviorTracking } from "@/hooks/useBehaviorTracking";
 import { useExamTimer } from "@/hooks/useExamTimer";
+import { sanitizeRichTextHtml } from "@/lib/richText";
 
 type RuntimeQuestion = {
   id: string;
@@ -366,7 +367,10 @@ function AttemptRuntimeView({
             <p className="text-xs font-medium text-slate-500">
               Question {currentQuestionIndex + 1} of {runtime.questions.length}
             </p>
-            <h2 className="mt-1 text-sm font-semibold text-slate-900">{currentQuestion.title}</h2>
+            <h2
+              className="candidate-rich-text mt-1 text-sm font-semibold text-slate-900"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(currentQuestion.title) }}
+            />
 
             {currentQuestion.type === "TEXT" ? (
               <div className="mt-3">
@@ -414,7 +418,10 @@ function AttemptRuntimeView({
                           });
                         }}
                       />
-                      {option.text}
+                      <span
+                        className="candidate-rich-text"
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(option.text) }}
+                      />
                     </label>
                   );
                 })}
@@ -453,16 +460,30 @@ function AttemptRuntimeView({
                 <article key={question.id} className="rounded-xl border border-slate-200 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-sm font-semibold text-slate-900">
-                        {index + 1}. {question.title}
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {question.type === "TEXT"
-                          ? answer?.textAnswer?.trim() || "No answer saved"
-                          : selectedOptions.length > 0
-                            ? selectedOptions.join(", ")
-                            : "No answer saved"}
-                      </p>
+                      <div className="flex items-start gap-1 text-sm font-semibold text-slate-900">
+                        <span>{index + 1}.</span>
+                        <h2
+                          className="candidate-rich-text"
+                          dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(question.title) }}
+                        />
+                      </div>
+                      {question.type === "TEXT" ? (
+                        <p className="mt-1 text-sm text-slate-600">
+                          {answer?.textAnswer?.trim() || "No answer saved"}
+                        </p>
+                      ) : selectedOptions.length > 0 ? (
+                        <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-slate-600">
+                          {selectedOptions.map((selectedOption, selectedOptionIndex) => (
+                            <li
+                              key={`${question.id}-${selectedOptionIndex}`}
+                              className="candidate-rich-text"
+                              dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(selectedOption) }}
+                            />
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-1 text-sm text-slate-600">No answer saved</p>
+                      )}
                     </div>
                     <Button
                       variant="outline"

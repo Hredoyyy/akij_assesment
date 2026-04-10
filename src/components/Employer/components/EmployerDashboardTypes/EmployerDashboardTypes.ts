@@ -3,6 +3,7 @@ export type EmployerExamSummary = {
   title: string;
   totalCandidates: number;
   totalSlots: number;
+  totalQuestionSets: number;
   totalQuestions: number;
   duration: number;
   negativeMarking: boolean;

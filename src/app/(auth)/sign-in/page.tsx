@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SignInForm } from "@/components/Auth/SignInForm/SignInForm";
@@ -13,18 +12,9 @@ export default async function SignInPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Sign In</h1>
-      <p className="mt-3 text-slate-600">
-        Enter your credentials to continue to your dashboard.
-      </p>
+    <main className="mx-auto flex w-full max-w-[571px] flex-col items-center px-4 pb-12 pt-20 sm:px-6">
+      <h1 className="text-[40px] font-semibold leading-[130%] text-slate-700">Sign In</h1>
       <SignInForm />
-      <p className="mt-4 text-sm text-slate-600">
-        Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="font-medium text-slate-900 underline">
-          Create one
-        </Link>
-      </p>
     </main>
   );
 }

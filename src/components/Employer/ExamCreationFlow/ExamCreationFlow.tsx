@@ -3,6 +3,7 @@
 import axios, { AxiosError } from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil } from "lucide-react";
 
 import { QuestionDialog } from "@/components/Employer/QuestionDialog/QuestionDialog";
 import { ExamFlowProgressCard } from "@/components/Employer/components/ExamFlowProgressCard/ExamFlowProgressCard";
@@ -92,6 +93,9 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
 
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [basicInfoMode, setBasicInfoMode] = useState<"view" | "edit">(
+    mode === "new" ? "edit" : "view",
+  );
   const initializedModeRef = useRef<"new" | "edit" | null>(null);
 
   useEffect(() => {
@@ -139,6 +143,30 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
     () => slots.find((slot) => slot.slotNumber === activeSlotNumber) ?? slots[0],
     [activeSlotNumber, slots],
   );
+
+  const questionTypeLabel = useMemo(() => {
+    const allTypes = new Set(slots.flatMap((slot) => slot.questions.map((question) => question.type)));
+
+    if (allTypes.size === 0) {
+      return "MCQ";
+    }
+
+    if (allTypes.size > 1) {
+      return "Mixed";
+    }
+
+    const [singleType] = Array.from(allTypes);
+
+    if (singleType === "RADIO") {
+      return "MCQ";
+    }
+
+    if (singleType === "CHECKBOX") {
+      return "Checkbox";
+    }
+
+    return "Text";
+  }, [slots]);
 
   const canContinue = useMemo(() => {
     if (!basicInfo.title.trim()) {
@@ -322,115 +350,81 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
         <>
           <section className="mx-auto mt-8 w-full max-w-[954px] rounded-2xl bg-white p-6">
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold leading-[140%] text-slate-700">Basic Information</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold leading-[140%] text-slate-700">Basic Information</h2>
 
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="md:col-span-2">
-                  <Label htmlFor="test-name" className="text-sm font-medium text-slate-700">
-                    Online Test Title <span className="text-rose-500">*</span>
-                  </Label>
-                  <Input
-                    id="test-name"
-                    placeholder="Enter online test title"
-                    value={basicInfo.title}
-                    onChange={(event) => setBasicInfo({ title: event.target.value })}
-                    className="mt-2 h-12 rounded-lg border-slate-200"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="total-candidates" className="text-sm font-medium text-slate-700">
-                    Total Candidates <span className="text-rose-500">*</span>
-                  </Label>
-                  <Input
-                    id="total-candidates"
-                    type="number"
-                    min={1}
-                    placeholder="Enter total candidates"
-                    value={basicInfo.totalCandidates ?? 1}
-                    onChange={(event) =>
-                      setBasicInfo({ totalCandidates: Number(event.target.value || 1) })
-                    }
-                    className="mt-2 h-12 rounded-lg border-slate-200"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-700">
-                    Total Slots <span className="text-rose-500">*</span>
-                  </Label>
-                  <Select
-                    value={String(basicInfo.totalSlots ?? 1)}
-                    onValueChange={(value) => setBasicInfo({ totalSlots: Number(value) })}
+                {basicInfoMode === "view" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-primary hover:bg-primary/5"
+                    onClick={() => setBasicInfoMode("edit")}
                   >
-                    <SelectTrigger className="mt-2 h-12 rounded-lg border-slate-200">
-                      <SelectValue placeholder="Select total slots" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="3">3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="question-sets" className="text-sm font-medium text-slate-700">
-                    Total Question Set <span className="text-rose-500">*</span>
-                  </Label>
-                  <Input
-                    id="question-sets"
-                    value={basicInfo.totalSlots ?? 1}
-                    disabled
-                    readOnly
-                    className="mt-2 h-12 rounded-lg border-slate-200 bg-white"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="duration" className="text-sm font-medium text-slate-700">
-                    Duration
-                  </Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    min={1}
-                    placeholder="Duration Time"
-                    value={basicInfo.duration ?? 30}
-                    onChange={(event) => setBasicInfo({ duration: Number(event.target.value || 1) })}
-                    className="mt-2 h-12 rounded-lg border-slate-200"
-                  />
-                </div>
-
-                <div className="md:col-span-2 flex items-center gap-2">
-                  <input
-                    id="negative-marking"
-                    type="checkbox"
-                    checked={basicInfo.negativeMarking}
-                    onChange={(e) => setBasicInfo({ negativeMarking: e.target.checked })}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="negative-marking" className="text-sm font-medium text-slate-700">
-                    Negative Marking
-                  </Label>
-                </div>
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </Button>
+                ) : null}
               </div>
 
-              <div className="space-y-5">
-                {slots.map((slot) => (
-                  <div key={slot.slotNumber} className="grid gap-6 md:grid-cols-3">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Start Time (Slot {slot.slotNumber}) <span className="text-rose-500">*</span>
+              {basicInfoMode === "view" ? (
+                <div className="space-y-6">
+                  <div className="space-y-1">
+                    <p className="text-sm font-normal text-slate-500">Online Test Title</p>
+                    <p className="text-2xl font-medium leading-[150%] text-slate-700">{basicInfo.title || "-"}</p>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-normal text-slate-500">Total Candidates</p>
+                      <p className="text-base font-medium text-slate-700">{basicInfo.totalCandidates}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-normal text-slate-500">Total Slots</p>
+                      <p className="text-base font-medium text-slate-700">{basicInfo.totalSlots}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-normal text-slate-500">Total Question Set</p>
+                      <p className="text-base font-medium text-slate-700">{slots.length}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-normal text-slate-500">Duration Per Slots (Minutes)</p>
+                      <p className="text-base font-medium text-slate-700">{basicInfo.duration}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm font-normal text-slate-500">Question Type</p>
+                    <p className="text-base font-medium text-slate-700">{questionTypeLabel}</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="test-name" className="text-sm font-medium text-slate-700">
+                        Online Test Title <span className="text-rose-500">*</span>
                       </Label>
                       <Input
-                        type="datetime-local"
-                        value={slot.startTime ?? ""}
+                        id="test-name"
+                        placeholder="Enter online test title"
+                        value={basicInfo.title}
+                        onChange={(event) => setBasicInfo({ title: event.target.value })}
+                        className="mt-2 h-12 rounded-lg border-slate-200"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="total-candidates" className="text-sm font-medium text-slate-700">
+                        Total Candidates <span className="text-rose-500">*</span>
+                      </Label>
+                      <Input
+                        id="total-candidates"
+                        type="number"
+                        min={1}
+                        placeholder="Enter total candidates"
+                        value={basicInfo.totalCandidates ?? 1}
                         onChange={(event) =>
-                          setSlotTiming(slot.slotNumber, {
-                            startTime: event.target.value,
-                            endTime: slot.endTime,
-                          })
+                          setBasicInfo({ totalCandidates: Number(event.target.value || 1) })
                         }
                         className="mt-2 h-12 rounded-lg border-slate-200"
                       />
@@ -438,33 +432,116 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
 
                     <div>
                       <Label className="text-sm font-medium text-slate-700">
-                        End Time (Slot {slot.slotNumber}) <span className="text-rose-500">*</span>
+                        Total Slots <span className="text-rose-500">*</span>
                       </Label>
-                      <Input
-                        type="datetime-local"
-                        value={slot.endTime ?? ""}
-                        onChange={(event) =>
-                          setSlotTiming(slot.slotNumber, {
-                            startTime: slot.startTime,
-                            endTime: event.target.value,
-                          })
-                        }
-                        className="mt-2 h-12 rounded-lg border-slate-200"
-                      />
+                      <Select
+                        value={String(basicInfo.totalSlots ?? 1)}
+                        onValueChange={(value) => setBasicInfo({ totalSlots: Number(value) })}
+                      >
+                        <SelectTrigger className="mt-2 h-12 rounded-lg border-slate-200">
+                          <SelectValue placeholder="Select total slots" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">Duration</Label>
+                      <Label htmlFor="question-sets" className="text-sm font-medium text-slate-700">
+                        Total Question Set <span className="text-rose-500">*</span>
+                      </Label>
                       <Input
-                        value={`${basicInfo.duration || 0} min`}
+                        id="question-sets"
+                        value={basicInfo.totalSlots ?? 1}
                         disabled
                         readOnly
                         className="mt-2 h-12 rounded-lg border-slate-200 bg-white"
                       />
                     </div>
+
+                    <div>
+                      <Label htmlFor="duration" className="text-sm font-medium text-slate-700">
+                        Duration
+                      </Label>
+                      <Input
+                        id="duration"
+                        type="number"
+                        min={1}
+                        placeholder="Duration Time"
+                        value={basicInfo.duration ?? 30}
+                        onChange={(event) => setBasicInfo({ duration: Number(event.target.value || 1) })}
+                        className="mt-2 h-12 rounded-lg border-slate-200"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 flex items-center gap-2">
+                      <input
+                        id="negative-marking"
+                        type="checkbox"
+                        checked={basicInfo.negativeMarking}
+                        onChange={(e) => setBasicInfo({ negativeMarking: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="negative-marking" className="text-sm font-medium text-slate-700">
+                        Negative Marking
+                      </Label>
+                    </div>
                   </div>
-                ))}
-              </div>
+
+                  <div className="space-y-5">
+                    {slots.map((slot) => (
+                      <div key={slot.slotNumber} className="grid gap-6 md:grid-cols-3">
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">
+                            Start Time (Slot {slot.slotNumber}) <span className="text-rose-500">*</span>
+                          </Label>
+                          <Input
+                            type="datetime-local"
+                            value={slot.startTime ?? ""}
+                            onChange={(event) =>
+                              setSlotTiming(slot.slotNumber, {
+                                startTime: event.target.value,
+                                endTime: slot.endTime,
+                              })
+                            }
+                            className="mt-2 h-12 rounded-lg border-slate-200"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">
+                            End Time (Slot {slot.slotNumber}) <span className="text-rose-500">*</span>
+                          </Label>
+                          <Input
+                            type="datetime-local"
+                            value={slot.endTime ?? ""}
+                            onChange={(event) =>
+                              setSlotTiming(slot.slotNumber, {
+                                startTime: slot.startTime,
+                                endTime: event.target.value,
+                              })
+                            }
+                            className="mt-2 h-12 rounded-lg border-slate-200"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-sm font-medium text-slate-700">Duration</Label>
+                          <Input
+                            value={`${basicInfo.duration || 0} min`}
+                            disabled
+                            readOnly
+                            className="mt-2 h-12 rounded-lg border-slate-200 bg-white"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
@@ -482,8 +559,15 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
               </Button>
               <Button
                 className="h-12 min-w-[180px] rounded-xl text-base font-semibold"
-                disabled={!canContinue || isSubmitting}
-                onClick={() => saveExam({ exitAfterSave: false })}
+                disabled={basicInfoMode === "edit" ? !canContinue || isSubmitting : isSubmitting}
+                onClick={() => {
+                  if (basicInfoMode === "view") {
+                    setStep(2);
+                    return;
+                  }
+
+                  void saveExam({ exitAfterSave: false });
+                }}
               >
                 {isSubmitting ? "Saving..." : "Save & Continue"}
               </Button>

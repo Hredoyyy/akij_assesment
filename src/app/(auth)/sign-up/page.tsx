@@ -13,11 +13,8 @@ export default async function SignUpPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-semibold text-slate-900">Sign Up</h1>
-      <p className="mt-3 text-slate-600">
-        Create your account. New sign-ups are assigned candidate role by default.
-      </p>
+    <main className="mx-auto flex w-full max-w-[571px] flex-col items-center px-4 pb-12 pt-20 sm:px-6">
+      <h1 className="text-[40px] font-semibold leading-[130%] text-slate-700">Sign Up</h1>
       <SignUpForm />
       <p className="mt-4 text-sm text-slate-600">
         Already have an account?{" "}
