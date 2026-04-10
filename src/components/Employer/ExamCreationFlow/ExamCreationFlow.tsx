@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { QuestionDialog } from "@/components/Employer/QuestionDialog/QuestionDialog";
+import { ExamFlowProgressCard } from "@/components/Employer/components/ExamFlowProgressCard/ExamFlowProgressCard";
+import { QuestionListPanel } from "@/components/Employer/components/QuestionListPanel/QuestionListPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +19,6 @@ import {
 } from "@/components/ui/select";
 import {
   useExamDraftStore,
-  type DraftQuestion,
   type DraftSlot,
 } from "@/stores/examDraftStore";
 
@@ -303,219 +304,234 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Manage Online Test</h1>
-        <p className="mt-2 text-sm text-slate-600">Step {step} of 2</p>
-      </header>
+    <main className="mx-auto w-full max-w-[1280px] px-4 py-14 sm:px-6 lg:px-8">
+      <ExamFlowProgressCard
+        step={step}
+        onBackToDashboard={() => {
+          resetDraft();
+          router.push("/employer/dashboard");
+        }}
+        onStepClick={(targetStep) => {
+          if (targetStep === 1 && step === 2) {
+            setStep(1);
+          }
+        }}
+      />
 
       {step === 1 ? (
-        <section className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <Label htmlFor="test-name">Online Test Name</Label>
-              <Input
-                id="test-name"
-                value={basicInfo.title}
-                onChange={(event) => setBasicInfo({ title: event.target.value })}
-              />
-            </div>
+        <>
+          <section className="mx-auto mt-8 w-full max-w-[954px] rounded-2xl bg-white p-6">
+            <div className="space-y-6">
+              <h2 className="text-xl font-semibold leading-[140%] text-slate-700">Basic Information</h2>
 
-            <div>
-              <Label htmlFor="total-candidates">Total Candidates</Label>
-              <Input
-                id="total-candidates"
-                type="number"
-                min={1}
-                value={basicInfo.totalCandidates ?? 1}
-                onChange={(event) =>
-                  setBasicInfo({ totalCandidates: Number(event.target.value || 1) })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Total Slots (max 3)</Label>
-              <Select
-                value={String(basicInfo.totalSlots ?? 1)}
-                onValueChange={(value) => setBasicInfo({ totalSlots: Number(value) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select total slots" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="question-sets">Total Question Sets</Label>
-              <Input id="question-sets" value={basicInfo.totalSlots ?? 1} disabled readOnly />
-            </div>
-
-            <div>
-              <Label htmlFor="duration">Duration (minutes, same for all slots)</Label>
-              <Input
-                id="duration"
-                type="number"
-                min={1}
-                value={basicInfo.duration ?? 30}
-                onChange={(event) => setBasicInfo({ duration: Number(event.target.value || 1) })}
-              />
-            </div>
-            <div className="md:col-span-2 flex items-center gap-2 mt-2">
-              <input
-                id="negative-marking"
-                type="checkbox"
-                checked={basicInfo.negativeMarking}
-                onChange={(e) => setBasicInfo({ negativeMarking: e.target.checked })}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="negative-marking">Negative Marking</Label>
-            </div>
-          </div>
-
-          <div className="space-y-4 rounded-xl border border-slate-200 p-4">
-            <h2 className="text-base font-semibold text-slate-900">Slot Timings</h2>
-            {slots.map((slot) => (
-              <div key={slot.slotNumber} className="grid gap-4 md:grid-cols-3">
-                <div className="flex items-end text-sm font-medium text-slate-700">
-                  Slot {slot.slotNumber}
-                </div>
-                <div>
-                  <Label>Start Time</Label>
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <Label htmlFor="test-name" className="text-sm font-medium text-slate-700">
+                    Online Test Title <span className="text-rose-500">*</span>
+                  </Label>
                   <Input
-                    type="datetime-local"
-                    value={slot.startTime ?? ""}
-                    onChange={(event) =>
-                      setSlotTiming(slot.slotNumber, {
-                        startTime: event.target.value,
-                        endTime: slot.endTime,
-                      })
-                    }
+                    id="test-name"
+                    placeholder="Enter online test title"
+                    value={basicInfo.title}
+                    onChange={(event) => setBasicInfo({ title: event.target.value })}
+                    className="mt-2 h-12 rounded-lg border-slate-200"
                   />
                 </div>
+
                 <div>
-                  <Label>End Time</Label>
+                  <Label htmlFor="total-candidates" className="text-sm font-medium text-slate-700">
+                    Total Candidates <span className="text-rose-500">*</span>
+                  </Label>
                   <Input
-                    type="datetime-local"
-                    value={slot.endTime ?? ""}
+                    id="total-candidates"
+                    type="number"
+                    min={1}
+                    placeholder="Enter total candidates"
+                    value={basicInfo.totalCandidates ?? 1}
                     onChange={(event) =>
-                      setSlotTiming(slot.slotNumber, {
-                        startTime: slot.startTime,
-                        endTime: event.target.value,
-                      })
+                      setBasicInfo({ totalCandidates: Number(event.target.value || 1) })
                     }
+                    className="mt-2 h-12 rounded-lg border-slate-200"
                   />
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-700">
+                    Total Slots <span className="text-rose-500">*</span>
+                  </Label>
+                  <Select
+                    value={String(basicInfo.totalSlots ?? 1)}
+                    onValueChange={(value) => setBasicInfo({ totalSlots: Number(value) })}
+                  >
+                    <SelectTrigger className="mt-2 h-12 rounded-lg border-slate-200">
+                      <SelectValue placeholder="Select total slots" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="question-sets" className="text-sm font-medium text-slate-700">
+                    Total Question Set <span className="text-rose-500">*</span>
+                  </Label>
+                  <Input
+                    id="question-sets"
+                    value={basicInfo.totalSlots ?? 1}
+                    disabled
+                    readOnly
+                    className="mt-2 h-12 rounded-lg border-slate-200 bg-white"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="duration" className="text-sm font-medium text-slate-700">
+                    Duration
+                  </Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min={1}
+                    placeholder="Duration Time"
+                    value={basicInfo.duration ?? 30}
+                    onChange={(event) => setBasicInfo({ duration: Number(event.target.value || 1) })}
+                    className="mt-2 h-12 rounded-lg border-slate-200"
+                  />
+                </div>
+
+                <div className="md:col-span-2 flex items-center gap-2">
+                  <input
+                    id="negative-marking"
+                    type="checkbox"
+                    checked={basicInfo.negativeMarking}
+                    onChange={(e) => setBasicInfo({ negativeMarking: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="negative-marking" className="text-sm font-medium text-slate-700">
+                    Negative Marking
+                  </Label>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <div className="flex flex-wrap justify-between gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                resetDraft();
-                router.push("/employer/dashboard");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button disabled={!canContinue || isSubmitting} onClick={() => saveExam({ exitAfterSave: false })}>
-              {isSubmitting ? "Saving..." : "Save and Continue"}
-            </Button>
-          </div>
-        </section>
-      ) : (
-        <section className="mt-6 space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap gap-2">
-            {slots.map((slot) => (
-              <Button
-                key={slot.slotNumber}
-                variant={activeSlotNumber === slot.slotNumber ? "default" : "outline"}
-                onClick={() => setActiveSlotNumber(slot.slotNumber)}
-              >
-                Slot {slot.slotNumber}
-              </Button>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-900">
-              Questions for Slot {activeSlot?.slotNumber}
-            </h2>
-            <QuestionDialog onSave={addQuestionAndPersist} />
-          </div>
-
-          {activeSlot && activeSlot.questions.length > 0 ? (
-            <div className="space-y-3">
-              {activeSlot.questions.map((question: DraftQuestion, index: number) => (
-                <article key={question.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-2">
+              <div className="space-y-5">
+                {slots.map((slot) => (
+                  <div key={slot.slotNumber} className="grid gap-6 md:grid-cols-3">
                     <div>
-                      <p className="text-xs font-medium text-slate-500">Question {index + 1}</p>
-                      <h3 className="text-sm font-semibold text-slate-900">{question.title}</h3>
-                      <p className="mt-1 text-xs text-slate-600">
-                        Type: {question.type} • Points: {question.points}
-                      </p>
+                      <Label className="text-sm font-medium text-slate-700">
+                        Start Time (Slot {slot.slotNumber}) <span className="text-rose-500">*</span>
+                      </Label>
+                      <Input
+                        type="datetime-local"
+                        value={slot.startTime ?? ""}
+                        onChange={(event) =>
+                          setSlotTiming(slot.slotNumber, {
+                            startTime: event.target.value,
+                            endTime: slot.endTime,
+                          })
+                        }
+                        className="mt-2 h-12 rounded-lg border-slate-200"
+                      />
                     </div>
-                    <QuestionDialog
-                      onSave={(updatedQuestion) =>
-                        editQuestionAndPersist(question.id, updatedQuestion)
-                      }
-                      triggerLabel="Edit"
-                      triggerVariant="outline"
-                      triggerSize="sm"
-                      dialogTitle="Edit Question"
-                      dialogDescription="Update this question and save the changes to this slot."
-                      submitLabel="Save Changes"
-                      showSaveAndAddMore={false}
-                      initialQuestion={{
-                        title: question.title,
-                        type: question.type,
-                        points: question.points,
-                        options: question.options.map((option) => ({
-                          text: option.text,
-                          isCorrect: option.isCorrect,
-                        })),
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeQuestionAndPersist(activeSlot.slotNumber, question.id)}
-                    >
-                      Delete
-                    </Button>
+
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">
+                        End Time (Slot {slot.slotNumber}) <span className="text-rose-500">*</span>
+                      </Label>
+                      <Input
+                        type="datetime-local"
+                        value={slot.endTime ?? ""}
+                        onChange={(event) =>
+                          setSlotTiming(slot.slotNumber, {
+                            startTime: slot.startTime,
+                            endTime: event.target.value,
+                          })
+                        }
+                        className="mt-2 h-12 rounded-lg border-slate-200"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">Duration</Label>
+                      <Input
+                        value={`${basicInfo.duration || 0} min`}
+                        disabled
+                        readOnly
+                        className="mt-2 h-12 rounded-lg border-slate-200 bg-white"
+                      />
+                    </div>
                   </div>
-                </article>
-              ))}
+                ))}
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-slate-600">No questions added for this slot yet.</p>
-          )}
+          </section>
 
-          {requestError ? <p className="text-sm text-rose-600">{requestError}</p> : null}
+          <section className="mx-auto mt-6 w-full max-w-[954px] rounded-2xl bg-white p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <Button
+                variant="outline"
+                className="h-12 min-w-[180px] rounded-xl text-base font-semibold"
+                onClick={() => {
+                  resetDraft();
+                  router.push("/employer/dashboard");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="h-12 min-w-[180px] rounded-xl text-base font-semibold"
+                disabled={!canContinue || isSubmitting}
+                onClick={() => saveExam({ exitAfterSave: false })}
+              >
+                {isSubmitting ? "Saving..." : "Save & Continue"}
+              </Button>
+            </div>
+          </section>
 
-          <div className="flex flex-wrap justify-between gap-3">
-            <Button variant="outline" onClick={() => setStep(1)}>
-              Back to Basic Info
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                resetDraft();
-                router.push("/employer/dashboard");
-              }}
-            >
-              Go Back to Dashboard
-            </Button>
-          </div>
-        </section>
+          {requestError ? <p className="mx-auto mt-3 w-full max-w-[954px] text-sm text-rose-600">{requestError}</p> : null}
+        </>
+      ) : (
+        <>
+          {slots.length > 1 ? (
+            <section className="mx-auto mt-4 w-full max-w-[954px] rounded-2xl bg-white p-6">
+              <div className="flex flex-wrap gap-2">
+                {slots.map((slot) => (
+                  <Button
+                    key={slot.slotNumber}
+                    variant={activeSlotNumber === slot.slotNumber ? "default" : "outline"}
+                    onClick={() => setActiveSlotNumber(slot.slotNumber)}
+                  >
+                    Slot {slot.slotNumber}
+                  </Button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {activeSlot ? (
+            <QuestionListPanel
+              questions={activeSlot.questions}
+              onEditQuestion={(questionId, updatedQuestion) =>
+                editQuestionAndPersist(questionId, updatedQuestion)
+              }
+              onDeleteQuestion={(questionId) => removeQuestionAndPersist(activeSlot.slotNumber, questionId)}
+            />
+          ) : null}
+
+          <section className="mx-auto mt-4 w-full max-w-[954px] rounded-2xl bg-white p-6">
+            <QuestionDialog
+              onSave={addQuestionAndPersist}
+              triggerLabel="Add Question"
+              triggerClassName="h-14 w-full rounded-xl text-lg font-semibold"
+            />
+          </section>
+
+          {requestError ? (
+            <p className="mx-auto mt-3 w-full max-w-[954px] text-sm text-rose-600">{requestError}</p>
+          ) : null}
+        </>
       )}
     </main>
   );

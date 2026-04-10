@@ -7,6 +7,8 @@ type AvailableExam = {
   examId: string;
   title: string;
   duration: number;
+  questionCount: number;
+  negativeMarking: boolean;
   slotNumber: number;
   slotStartTime: Date;
   slotEndTime: Date;
@@ -28,6 +30,7 @@ export async function fetchAvailableExamsAction(
           id: true,
           title: true,
           duration: true,
+          negativeMarking: true,
           attempts: {
             where: {
               candidateId: payload.candidateId,
@@ -36,6 +39,15 @@ export async function fetchAvailableExamsAction(
               status: true,
             },
             take: 1,
+          },
+        },
+      },
+      questionSet: {
+        select: {
+          questions: {
+            select: {
+              id: true,
+            },
           },
         },
       },
@@ -51,6 +63,8 @@ export async function fetchAvailableExamsAction(
       examId: slot.exam.id,
       title: slot.exam.title,
       duration: slot.exam.duration,
+      questionCount: slot.questionSet?.questions.length ?? 0,
+      negativeMarking: slot.exam.negativeMarking,
       slotNumber: slot.slotNumber,
       slotStartTime: slot.startTime,
       slotEndTime: slot.endTime,

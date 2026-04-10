@@ -10,6 +10,8 @@ type AvailableExam = {
   examId: string;
   title: string;
   duration: number;
+  questionCount: number;
+  negativeMarking: boolean;
   slotNumber: number;
   slotStartTime: string;
   slotEndTime: string;
@@ -69,19 +71,48 @@ export function CandidateExamList({ exams }: CandidateExamListProps) {
               exam.attemptStatus === "VIOLATION_TERMINATED";
 
             return (
-              <article key={`${exam.examId}-${exam.slotNumber}`} className="rounded-xl border border-slate-200 p-4">
-                <h3 className="text-base font-semibold text-slate-900">{exam.title}</h3>
-                <p className="mt-1 text-xs text-slate-500">Slot {exam.slotNumber}</p>
-                <p className="mt-2 text-sm text-slate-600">Duration: {exam.duration} minutes</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {new Date(exam.slotStartTime).toLocaleString()} - {new Date(exam.slotEndTime).toLocaleString()}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {isUpcoming ? "Status: Upcoming" : "Status: Active"}
+              <article
+                key={`${exam.examId}-${exam.slotNumber}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (!isCompleted && !isUpcoming && startingExamId !== exam.examId) {
+                    void startExam(exam.examId);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if ((event.key === "Enter" || event.key === " ") && !isCompleted && !isUpcoming && startingExamId !== exam.examId) {
+                    event.preventDefault();
+                    void startExam(exam.examId);
+                  }
+                }}
+                className="flex w-full max-w-[632px] cursor-pointer flex-col justify-center gap-6 rounded-2xl border border-slate-200 bg-white p-6"
+              >
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold leading-[140%] text-slate-700">{exam.title}</h3>
+                  <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-700">
+                    <p>Duration: <span className="font-medium">{exam.duration} min</span></p>
+                    <p>Question: <span className="font-medium">{exam.questionCount}</span></p>
+                    <p>
+                      Negative Marking: <span className="font-medium">
+                        {exam.negativeMarking ? "-0.25/wrong" : "No"}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-500">
+                  Slot {exam.slotNumber} • {new Date(exam.slotStartTime).toLocaleString()} - {new Date(exam.slotEndTime).toLocaleString()}
                 </p>
 
-                <div className="mt-4">
+                <div
+                  className="mt-1"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                >
                   <Button
+                    variant="outline"
                     disabled={isCompleted || isUpcoming || startingExamId === exam.examId}
                     onClick={() => startExam(exam.examId)}
                   >

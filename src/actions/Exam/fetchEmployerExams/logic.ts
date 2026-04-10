@@ -8,9 +8,22 @@ type EmployerExamSummary = {
   title: string;
   totalCandidates: number;
   totalSlots: number;
+  totalQuestions: number;
   duration: number;
+  negativeMarking: boolean;
   createdAt: Date;
+  updatedAt: Date;
+  candidates: Array<{
+    candidateName: string;
+    score: number | null;
+    status: "IN_PROGRESS" | "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
+  }>;
 };
+
+const isFinalAttemptStatus = (
+  status: "IN_PROGRESS" | "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED",
+): status is "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED" =>
+  status === "SUBMITTED" || status === "TIMED_OUT" || status === "VIOLATION_TERMINATED";
 
 export async function fetchEmployerExamsAction(
   payload: FetchEmployerExamsInput,
@@ -27,13 +40,66 @@ export async function fetchEmployerExamsAction(
       title: true,
       totalCandidates: true,
       totalSlots: true,
+      negativeMarking: true,
       duration: true,
       createdAt: true,
+      updatedAt: true,
+      slots: {
+        select: {
+          questionSet: {
+            select: {
+              questions: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      attempts: {
+        where: {
+          status: {
+            in: ["SUBMITTED", "TIMED_OUT", "VIOLATION_TERMINATED"],
+          },
+        },
+        select: {
+          score: true,
+          status: true,
+          candidate: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
   });
 
   return {
     success: true,
-    data: exams,
+    data: exams.map((exam) => ({
+      id: exam.id,
+      title: exam.title,
+      totalCandidates: exam.totalCandidates,
+      totalSlots: exam.totalSlots,
+      totalQuestions: exam.slots.reduce(
+        (total, slot) => total + (slot.questionSet?.questions.length ?? 0),
+        0,
+      ),
+      duration: exam.duration,
+      negativeMarking: exam.negativeMarking,
+      createdAt: exam.createdAt,
+      updatedAt: exam.updatedAt,
+      candidates: exam.attempts
+        .filter((attempt) => isFinalAttemptStatus(attempt.status))
+        .map((attempt) => ({
+          candidateName: attempt.candidate.name ?? attempt.candidate.email,
+          score: attempt.score,
+          status: attempt.status,
+        }))
+        .sort((a, b) => (b.score ?? Number.NEGATIVE_INFINITY) - (a.score ?? Number.NEGATIVE_INFINITY)),
+    })),
   };
 }

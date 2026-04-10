@@ -178,7 +178,7 @@ export const useExamDraftStore = create<ExamDraftState>()(
       hydrateDraft: ({ examId, basicInfo, slots }) =>
         set({
           examId,
-          step: 2,
+          step: 1,
           basicInfo: {
             title: basicInfo.title,
             totalCandidates: Math.max(1, basicInfo.totalCandidates),

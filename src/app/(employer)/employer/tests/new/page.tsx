@@ -5,6 +5,8 @@ import { fetchExamDraftSchema } from "@/actions/Exam/fetchExamDraft/schema";
 import { ExamCreationFlow } from "@/components/Employer/ExamCreationFlow/ExamCreationFlow";
 import { requireAuth } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 type NewEmployerTestPageProps = {
   searchParams: Promise<{
     examId?: string;

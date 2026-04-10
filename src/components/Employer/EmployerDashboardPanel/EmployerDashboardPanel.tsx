@@ -1,19 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-type EmployerExamSummary = {
-  id: string;
-  title: string;
-  totalCandidates: number;
-  totalSlots: number;
-  duration: number;
-  createdAt: Date;
-};
+import { EmployerDashboardHeader } from "@/components/Employer/components/EmployerDashboardHeader/EmployerDashboardHeader";
+import { EmptyExamListState } from "@/components/Employer/components/EmptyExamListState/EmptyExamListState";
+import { EmployerExamCard } from "@/components/Employer/components/EmployerExamCard/EmployerExamCard";
+import type { EmployerExamSummary } from "@/components/Employer/components/EmployerDashboardTypes/EmployerDashboardTypes";
 
 type EmployerDashboardPanelProps = {
   exams: EmployerExamSummary[];
@@ -32,50 +24,27 @@ export function EmployerDashboardPanel({ exams }: EmployerDashboardPanelProps) {
     return exams.filter((exam) => exam.title.toLowerCase().includes(query));
   }, [exams, search]);
 
+  const hasNoExams = exams.length === 0;
+  const hasNoSearchResults = exams.length > 0 && filteredExams.length === 0;
+
   return (
-    <section className="mt-8 space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <header className="grid items-center gap-3 md:grid-cols-[1fr_1.2fr_1fr]">
-        <h2 className="text-xl font-semibold text-slate-900">Your Exams</h2>
+    <section className="mt-8 space-y-4">
+      <EmployerDashboardHeader search={search} onSearchChange={setSearch} />
 
-        <div className="md:justify-self-center md:w-full md:max-w-md">
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search exams by test name"
-          />
-        </div>
-
-        <div className="md:justify-self-end">
-          <div className="flex items-center justify-end gap-2">
-            <Button asChild variant="outline">
-              <Link href="/candidate/dashboard">Switch to Candidate Dashboard</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/employer/tests/new">Add New Test</Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {filteredExams.length === 0 ? (
-        <p className="text-sm text-slate-600">No exams found.</p>
+      {hasNoExams ? (
+        <EmptyExamListState
+          title="No Online Tests Yet"
+          description="No exams are available right now. Create a new test to start tracking candidate assessments."
+        />
+      ) : hasNoSearchResults ? (
+        <EmptyExamListState
+          title="No Matching Exams Found"
+          description="Try changing your search keyword or clear the search field to see all available tests."
+        />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
           {filteredExams.map((exam) => (
-            <article key={exam.id} className="rounded-xl border border-slate-200 p-4">
-              <h3 className="text-base font-semibold text-slate-900">{exam.title}</h3>
-              <p className="mt-2 text-sm text-slate-600">
-                {exam.totalCandidates} candidates • {exam.totalSlots} slots • {exam.duration} mins
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Created {new Date(exam.createdAt).toLocaleString()}
-              </p>
-              <div className="mt-3">
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/employer/tests/new?examId=${exam.id}`}>Continue Adding Questions</Link>
-                </Button>
-              </div>
-            </article>
+            <EmployerExamCard key={exam.id} exam={exam} />
           ))}
         </div>
       )}

@@ -36,6 +36,7 @@ type QuestionDialogProps = {
   triggerLabel?: string;
   triggerVariant?: "default" | "outline" | "ghost";
   triggerSize?: "default" | "sm";
+  triggerClassName?: string;
   dialogTitle?: string;
   dialogDescription?: string;
   submitLabel?: string;
@@ -60,6 +61,7 @@ export function QuestionDialog({
   triggerLabel = "Add Question",
   triggerVariant = "default",
   triggerSize = "default",
+  triggerClassName,
   dialogTitle = "Create Question",
   dialogDescription = "Configure question type, marks, and options before adding it to this slot.",
   submitLabel = "Save",
@@ -211,7 +213,7 @@ export function QuestionDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant={triggerVariant} size={triggerSize}>
+        <Button variant={triggerVariant} size={triggerSize} className={triggerClassName}>
           {triggerLabel}
         </Button>
       </DialogTrigger>
