@@ -1,7 +1,7 @@
 "use client";
 
 import axios, { AxiosError } from "axios";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { QuestionDialog } from "@/components/Employer/QuestionDialog/QuestionDialog";
@@ -28,6 +28,39 @@ type CreateExamResponse = {
   };
 };
 
+type ExistingExamDraft = {
+  examId: string;
+  basicInfo: {
+    title: string;
+    totalCandidates: number;
+    totalSlots: number;
+    duration: number;
+  };
+  slots: Array<{
+    slotNumber: number;
+    startTime: string;
+    endTime: string;
+    questions: Array<{
+      title: string;
+      type: "CHECKBOX" | "RADIO" | "TEXT";
+      points: number;
+      options: Array<{ text: string; isCorrect: boolean }>;
+    }>;
+  }>;
+};
+
+type QuestionPersistInput = {
+  title: string;
+  type: "CHECKBOX" | "RADIO" | "TEXT";
+  points: number;
+  options: Array<{ text: string; isCorrect: boolean }>;
+};
+
+type ExamCreationFlowProps = {
+  mode: "new" | "edit";
+  initialDraft?: ExistingExamDraft;
+};
+
 const toSlotDatetime = (value: string) => {
   if (!value) {
     return "";
@@ -35,24 +68,70 @@ const toSlotDatetime = (value: string) => {
   return new Date(value).toISOString();
 };
 
-export function ExamCreationFlow() {
+export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) {
   const router = useRouter();
   const {
+    examId,
     step,
     basicInfo,
     slots,
     activeSlotNumber,
+    hydrateDraft,
+    setExamId,
     setStep,
     setBasicInfo,
     setSlotTiming,
     setActiveSlotNumber,
     addQuestion,
+    updateQuestion,
     removeQuestion,
     resetDraft,
   } = useExamDraftStore();
 
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const initializedModeRef = useRef<"new" | "edit" | null>(null);
+
+  useEffect(() => {
+    if (mode === "new") {
+      if (initializedModeRef.current !== "new") {
+        resetDraft();
+        initializedModeRef.current = "new";
+      }
+      return;
+    }
+
+    initializedModeRef.current = "edit";
+
+    if (!initialDraft) {
+      return;
+    }
+
+    if (examId === initialDraft.examId) {
+      return;
+    }
+
+    hydrateDraft({
+      examId: initialDraft.examId,
+      basicInfo: initialDraft.basicInfo,
+      slots: initialDraft.slots.map((slot) => ({
+        slotNumber: slot.slotNumber,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        questions: slot.questions.map((question) => ({
+          id: crypto.randomUUID(),
+          title: question.title,
+          type: question.type,
+          points: question.points,
+          options: question.options.map((option) => ({
+            id: crypto.randomUUID(),
+            text: option.text,
+            isCorrect: option.isCorrect,
+          })),
+        })),
+      })),
+    });
+  }, [examId, hydrateDraft, initialDraft, mode, resetDraft]);
 
   const activeSlot = useMemo(
     () => slots.find((slot) => slot.slotNumber === activeSlotNumber) ?? slots[0],
@@ -80,24 +159,27 @@ export function ExamCreationFlow() {
     );
   }, [basicInfo, slots]);
 
-  const submitExam = async () => {
+  const saveExam = async ({
+    exitAfterSave,
+    slotsOverride,
+  }: {
+    exitAfterSave: boolean;
+    slotsOverride?: DraftSlot[];
+  }) => {
     setRequestError(null);
-
-    const hasQuestionsForAllSlots = slots.every((slot) => slot.questions.length > 0);
-    if (!hasQuestionsForAllSlots) {
-      setRequestError("Each slot must have at least one question.");
-      return;
-    }
 
     try {
       setIsSubmitting(true);
 
+      const effectiveSlots = slotsOverride ?? slots;
+
       const payload = {
+        examId: examId ?? undefined,
         title: basicInfo.title,
         totalCandidates: basicInfo.totalCandidates,
         duration: basicInfo.duration,
         negativeMarking: false,
-        slots: slots.map((slot) => ({
+        slots: effectiveSlots.map((slot) => ({
           slotNumber: slot.slotNumber,
           name: `Question Set ${slot.slotNumber}`,
           startTime: toSlotDatetime(slot.startTime),
@@ -119,25 +201,110 @@ export function ExamCreationFlow() {
       };
 
       const response = await axios.post<CreateExamResponse>("/api/exams", payload);
+      const savedExamId = response.data.data.examId;
 
-      resetDraft();
-      router.push(`/employer/dashboard?created=${response.data.data.examId}`);
-      router.refresh();
+      if (exitAfterSave) {
+        resetDraft();
+        router.push(`/employer/dashboard?saved=${savedExamId}`);
+        router.refresh();
+        return;
+      }
+
+      setExamId(savedExamId);
+      if (step === 1) {
+        setStep(2);
+      }
     } catch (error) {
       if (error instanceof AxiosError) {
-        setRequestError(error.response?.data?.error ?? "Unable to create exam.");
+        setRequestError(error.response?.data?.error ?? "Unable to save exam.");
       } else {
-        setRequestError("Unable to create exam.");
+        setRequestError("Unable to save exam.");
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const addQuestionAndPersist = async (question: QuestionPersistInput): Promise<void> => {
+    const nextSlots = slots.map((slot) => {
+      if (slot.slotNumber !== activeSlotNumber) {
+        return slot;
+      }
+
+      return {
+        ...slot,
+        questions: [
+          ...slot.questions,
+          {
+            ...question,
+            id: crypto.randomUUID(),
+            options: question.options.map((option) => ({
+              ...option,
+              id: crypto.randomUUID(),
+            })),
+          },
+        ],
+      };
+    });
+
+    addQuestion(activeSlotNumber, question);
+    await saveExam({ exitAfterSave: false, slotsOverride: nextSlots });
+  };
+
+  const editQuestionAndPersist = async (
+    questionId: string,
+    question: QuestionPersistInput,
+  ): Promise<void> => {
+    const nextSlots = slots.map((slot) => {
+      if (slot.slotNumber !== activeSlotNumber) {
+        return slot;
+      }
+
+      return {
+        ...slot,
+        questions: slot.questions.map((currentQuestion) => {
+          if (currentQuestion.id !== questionId) {
+            return currentQuestion;
+          }
+
+          return {
+            ...currentQuestion,
+            title: question.title,
+            type: question.type,
+            points: question.points,
+            options: question.options.map((option) => ({
+              ...option,
+              id: crypto.randomUUID(),
+            })),
+          };
+        }),
+      };
+    });
+
+    updateQuestion(activeSlotNumber, questionId, question);
+    await saveExam({ exitAfterSave: false, slotsOverride: nextSlots });
+  };
+
+  const removeQuestionAndPersist = async (slotNumber: number, questionId: string): Promise<void> => {
+    const nextSlots = slots.map((slot) => {
+      if (slot.slotNumber !== slotNumber) {
+        return slot;
+      }
+
+      return {
+        ...slot,
+        questions: slot.questions.filter((question) => question.id !== questionId),
+      };
+    });
+
+    removeQuestion(slotNumber, questionId);
+    await saveExam({ exitAfterSave: false, slotsOverride: nextSlots });
+  };
+
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Create New Test</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Manage Online Test</h1>
         <p className="mt-2 text-sm text-slate-600">Step {step} of 2</p>
       </header>
 
@@ -247,8 +414,8 @@ export function ExamCreationFlow() {
             >
               Cancel
             </Button>
-            <Button disabled={!canContinue} onClick={() => setStep(2)}>
-              Next: Add Questions
+            <Button disabled={!canContinue || isSubmitting} onClick={() => saveExam({ exitAfterSave: false })}>
+              {isSubmitting ? "Saving..." : "Save and Continue"}
             </Button>
           </div>
         </section>
@@ -270,11 +437,7 @@ export function ExamCreationFlow() {
             <h2 className="text-base font-semibold text-slate-900">
               Questions for Slot {activeSlot?.slotNumber}
             </h2>
-            <QuestionDialog
-              onCreate={(question) => {
-                addQuestion(activeSlotNumber, question);
-              }}
-            />
+            <QuestionDialog onSave={addQuestionAndPersist} />
           </div>
 
           {activeSlot && activeSlot.questions.length > 0 ? (
@@ -289,12 +452,33 @@ export function ExamCreationFlow() {
                         Type: {question.type} • Points: {question.points}
                       </p>
                     </div>
+                    <QuestionDialog
+                      onSave={(updatedQuestion) =>
+                        editQuestionAndPersist(question.id, updatedQuestion)
+                      }
+                      triggerLabel="Edit"
+                      triggerVariant="outline"
+                      triggerSize="sm"
+                      dialogTitle="Edit Question"
+                      dialogDescription="Update this question and save the changes to this slot."
+                      submitLabel="Save Changes"
+                      showSaveAndAddMore={false}
+                      initialQuestion={{
+                        title: question.title,
+                        type: question.type,
+                        points: question.points,
+                        options: question.options.map((option) => ({
+                          text: option.text,
+                          isCorrect: option.isCorrect,
+                        })),
+                      }}
+                    />
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => removeQuestion(activeSlot.slotNumber, question.id)}
+                      onClick={() => removeQuestionAndPersist(activeSlot.slotNumber, question.id)}
                     >
-                      Remove
+                      Delete
                     </Button>
                   </div>
                 </article>
@@ -310,8 +494,14 @@ export function ExamCreationFlow() {
             <Button variant="outline" onClick={() => setStep(1)}>
               Back to Basic Info
             </Button>
-            <Button disabled={isSubmitting} onClick={submitExam}>
-              {isSubmitting ? "Creating Test..." : "Create Test"}
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetDraft();
+                router.push("/employer/dashboard");
+              }}
+            >
+              Go Back to Dashboard
             </Button>
           </div>
         </section>

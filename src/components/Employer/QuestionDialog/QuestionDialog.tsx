@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,15 @@ type QuestionInput = {
 };
 
 type QuestionDialogProps = {
-  onCreate: (question: QuestionInput) => void;
+  onSave: (question: QuestionInput) => Promise<void>;
+  triggerLabel?: string;
+  triggerVariant?: "default" | "outline" | "ghost";
+  triggerSize?: "default" | "sm";
+  dialogTitle?: string;
+  dialogDescription?: string;
+  submitLabel?: string;
+  showSaveAndAddMore?: boolean;
+  initialQuestion?: QuestionInput;
 };
 
 type LocalOption = {
@@ -47,15 +55,50 @@ const makeOption = (isCorrect = false): LocalOption => ({
   isCorrect,
 });
 
-export function QuestionDialog({ onCreate }: QuestionDialogProps) {
+export function QuestionDialog({
+  onSave,
+  triggerLabel = "Add Question",
+  triggerVariant = "default",
+  triggerSize = "default",
+  dialogTitle = "Create Question",
+  dialogDescription = "Configure question type, marks, and options before adding it to this slot.",
+  submitLabel = "Save",
+  showSaveAndAddMore = true,
+  initialQuestion,
+}: QuestionDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<DraftQuestionType>("RADIO");
   const [points, setPoints] = useState(1);
   const [options, setOptions] = useState<LocalOption[]>([makeOption(true), makeOption(false)]);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const isObjective = useMemo(() => type !== "TEXT", [type]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (!initialQuestion) {
+      return;
+    }
+
+    setTitle(initialQuestion.title);
+    setType(initialQuestion.type);
+    setPoints(initialQuestion.points);
+    setOptions(
+      initialQuestion.type === "TEXT"
+        ? []
+        : initialQuestion.options.map((option) => ({
+            id: crypto.randomUUID(),
+            text: option.text,
+            isCorrect: option.isCorrect,
+          })),
+    );
+    setError(null);
+  }, [initialQuestion, open]);
 
   const resetState = () => {
     setTitle("");
@@ -85,43 +128,75 @@ export function QuestionDialog({ onCreate }: QuestionDialogProps) {
     );
   };
 
-  const submit = () => {
+  const validate = (): QuestionInput | null => {
     const normalizedTitle = title.trim();
 
     if (!normalizedTitle) {
       setError("Question title is required.");
-      return;
+      return null;
     }
 
     if (isObjective) {
       const normalizedOptions = options.map((option) => option.text.trim());
       if (normalizedOptions.some((value) => !value)) {
         setError("All options must have text.");
-        return;
+        return null;
       }
 
       const correctCount = options.filter((option) => option.isCorrect).length;
       if (type === "RADIO" && correctCount !== 1) {
         setError("Radio question must have exactly one correct option.");
-        return;
+        return null;
       }
 
       if (type === "CHECKBOX" && correctCount < 1) {
         setError("Checkbox question needs at least one correct option.");
-        return;
+        return null;
       }
     }
 
-    onCreate({
+    setError(null);
+
+    return {
       title: normalizedTitle,
       type,
       points,
       options: isObjective
         ? options.map((option) => ({ text: option.text.trim(), isCorrect: option.isCorrect }))
         : [],
-    });
+    };
+  };
+
+  const submit = async () => {
+    const question = validate();
+    if (!question) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await onSave(question);
+    } finally {
+      setIsSaving(false);
+    }
 
     setOpen(false);
+    resetState();
+  };
+
+  const submitAndAddMore = async () => {
+    const question = validate();
+    if (!question) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await onSave(question);
+    } finally {
+      setIsSaving(false);
+    }
+
     resetState();
   };
 
@@ -136,14 +211,14 @@ export function QuestionDialog({ onCreate }: QuestionDialogProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button>Add Question</Button>
+        <Button variant={triggerVariant} size={triggerSize}>
+          {triggerLabel}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Question</DialogTitle>
-          <DialogDescription>
-            Configure question type, marks, and options before adding it to this slot.
-          </DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -245,12 +320,17 @@ export function QuestionDialog({ onCreate }: QuestionDialogProps) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+          <Button variant="outline" type="button" onClick={() => setOpen(false)} disabled={isSaving}>
             Cancel
           </Button>
-          <Button type="button" onClick={submit}>
-            Add Question
+          <Button type="button" onClick={submit} disabled={isSaving}>
+            {isSaving ? "Saving..." : submitLabel}
           </Button>
+          {showSaveAndAddMore ? (
+            <Button type="button" onClick={submitAndAddMore} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save and Add More"}
+            </Button>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

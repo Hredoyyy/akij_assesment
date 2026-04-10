@@ -11,18 +11,59 @@ export async function createExamAction(
   payload: CreateExamInput,
   employerId: string,
 ): Promise<ActionResult<CreateExamResult>> {
-  const createdExam = await prisma.$transaction(async (tx) => {
-    const exam = await tx.exam.create({
-      data: {
-        title: payload.title,
-        totalCandidates: payload.totalCandidates,
-        totalSlots: payload.slots.length,
-        duration: payload.duration,
-        negativeMarking: payload.negativeMarking,
+  if (payload.examId) {
+    const existingExam = await prisma.exam.findFirst({
+      where: {
+        id: payload.examId,
         employerId,
       },
       select: {
         id: true,
+      },
+    });
+
+    if (!existingExam) {
+      return {
+        success: false,
+        error: "Exam not found for this employer.",
+      };
+    }
+  }
+
+  const createdExam = await prisma.$transaction(async (tx) => {
+    const exam = payload.examId
+      ? await tx.exam.update({
+          where: {
+            id: payload.examId,
+          },
+          data: {
+            title: payload.title,
+            totalCandidates: payload.totalCandidates,
+            totalSlots: payload.slots.length,
+            duration: payload.duration,
+            negativeMarking: payload.negativeMarking,
+          },
+          select: {
+            id: true,
+          },
+        })
+      : await tx.exam.create({
+          data: {
+            title: payload.title,
+            totalCandidates: payload.totalCandidates,
+            totalSlots: payload.slots.length,
+            duration: payload.duration,
+            negativeMarking: payload.negativeMarking,
+            employerId,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+    await tx.examSlot.deleteMany({
+      where: {
+        examId: exam.id,
       },
     });
 

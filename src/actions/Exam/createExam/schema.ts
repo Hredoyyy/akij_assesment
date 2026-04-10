@@ -52,7 +52,7 @@ const slotSchema = z
     name: z.string().trim().min(1, "Slot name is required."),
     startTime: z.iso.datetime(),
     endTime: z.iso.datetime(),
-    questions: z.array(questionSchema).min(1, "At least one question is required."),
+    questions: z.array(questionSchema).default([]),
   })
   .refine((value) => new Date(value.endTime) > new Date(value.startTime), {
     message: "End time must be after start time.",
@@ -60,6 +60,7 @@ const slotSchema = z
   });
 
 export const createExamSchema = z.object({
+  examId: z.string().uuid().optional(),
   title: z.string().trim().min(1, "Exam title is required."),
   totalCandidates: z.number().int().positive(),
   duration: z.number().int().positive(),

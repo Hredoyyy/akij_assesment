@@ -32,16 +32,30 @@ type BasicInfo = {
 };
 
 type ExamDraftState = {
+  examId: string | null;
   step: 1 | 2;
   basicInfo: BasicInfo;
   slots: DraftSlot[];
   activeSlotNumber: number;
+  hydrateDraft: (value: {
+    examId: string;
+    basicInfo: BasicInfo;
+    slots: DraftSlot[];
+  }) => void;
+  setExamId: (examId: string) => void;
   setStep: (step: 1 | 2) => void;
   setBasicInfo: (value: Partial<BasicInfo>) => void;
   setSlotTiming: (slotNumber: number, value: Pick<DraftSlot, "startTime" | "endTime">) => void;
   setActiveSlotNumber: (slotNumber: number) => void;
   addQuestion: (
     slotNumber: number,
+    question: Omit<DraftQuestion, "id" | "options"> & {
+      options: Array<Omit<DraftOption, "id">>;
+    },
+  ) => void;
+  updateQuestion: (
+    slotNumber: number,
+    questionId: string,
     question: Omit<DraftQuestion, "id" | "options"> & {
       options: Array<Omit<DraftOption, "id">>;
     },
@@ -87,7 +101,7 @@ const normalizeQuestionType = (value: unknown): DraftQuestionType => {
 
 const normalizePersistedState = (
   persistedState: Partial<ExamDraftState> | undefined,
-): Pick<ExamDraftState, "step" | "basicInfo" | "slots" | "activeSlotNumber"> => {
+): Pick<ExamDraftState, "examId" | "step" | "basicInfo" | "slots" | "activeSlotNumber"> => {
   const persistedBasicInfo = persistedState?.basicInfo;
 
   const normalizedTotalSlots = Math.max(
@@ -140,6 +154,7 @@ const normalizePersistedState = (
   );
 
   return {
+    examId: typeof persistedState?.examId === "string" ? persistedState.examId : null,
     step: persistedState?.step === 2 ? 2 : 1,
     basicInfo: normalizedBasicInfo,
     slots: normalizedSlots,
@@ -150,10 +165,25 @@ const normalizePersistedState = (
 export const useExamDraftStore = create<ExamDraftState>()(
   persist(
     (set) => ({
+      examId: null,
       step: 1,
       basicInfo: INITIAL_BASIC_INFO,
       slots: buildSlots(INITIAL_BASIC_INFO.totalSlots),
       activeSlotNumber: 1,
+      hydrateDraft: ({ examId, basicInfo, slots }) =>
+        set({
+          examId,
+          step: 2,
+          basicInfo: {
+            title: basicInfo.title,
+            totalCandidates: Math.max(1, basicInfo.totalCandidates),
+            totalSlots: Math.max(1, Math.min(3, basicInfo.totalSlots)),
+            duration: Math.max(1, basicInfo.duration),
+          },
+          slots: buildSlots(basicInfo.totalSlots, slots),
+          activeSlotNumber: 1,
+        }),
+      setExamId: (examId) => set({ examId }),
       setStep: (step) => set({ step }),
       setBasicInfo: (value) =>
         set((state) => ({
@@ -209,6 +239,34 @@ export const useExamDraftStore = create<ExamDraftState>()(
               : slot,
           ),
         })),
+      updateQuestion: (slotNumber, questionId, question) =>
+        set((state) => ({
+          slots: state.slots.map((slot) => {
+            if (slot.slotNumber !== slotNumber) {
+              return slot;
+            }
+
+            return {
+              ...slot,
+              questions: slot.questions.map((currentQuestion) => {
+                if (currentQuestion.id !== questionId) {
+                  return currentQuestion;
+                }
+
+                return {
+                  ...currentQuestion,
+                  title: question.title,
+                  type: question.type,
+                  points: question.points,
+                  options: question.options.map((option) => ({
+                    ...option,
+                    id: randomId(),
+                  })),
+                };
+              }),
+            };
+          }),
+        })),
       removeQuestion: (slotNumber, questionId) =>
         set((state) => ({
           slots: state.slots.map((slot) => {
@@ -224,6 +282,7 @@ export const useExamDraftStore = create<ExamDraftState>()(
         })),
       resetDraft: () =>
         set({
+          examId: null,
           step: 1,
           basicInfo: INITIAL_BASIC_INFO,
           slots: buildSlots(INITIAL_BASIC_INFO.totalSlots),
@@ -232,12 +291,13 @@ export const useExamDraftStore = create<ExamDraftState>()(
     }),
     {
       name: "exam-draft-store",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState) => {
         return normalizePersistedState(persistedState as Partial<ExamDraftState>);
       },
       partialize: (state) => ({
+        examId: state.examId,
         step: state.step,
         basicInfo: state.basicInfo,
         slots: state.slots,

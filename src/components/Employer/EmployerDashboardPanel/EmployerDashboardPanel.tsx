@@ -70,6 +70,11 @@ export function EmployerDashboardPanel({ exams }: EmployerDashboardPanelProps) {
               <p className="mt-1 text-xs text-slate-500">
                 Created {new Date(exam.createdAt).toLocaleString()}
               </p>
+              <div className="mt-3">
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/employer/tests/new?examId=${exam.id}`}>Continue Adding Questions</Link>
+                </Button>
+              </div>
             </article>
           ))}
         </div>
