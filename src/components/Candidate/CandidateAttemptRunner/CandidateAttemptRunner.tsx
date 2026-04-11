@@ -217,10 +217,17 @@ function AttemptRuntimeView({
   const getFullscreenElement = useCallback(() => {
     const doc = document as Document & {
       webkitFullscreenElement?: Element | null;
+      mozFullscreenElement?: Element | null;
       msFullscreenElement?: Element | null;
     };
 
-    return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? doc.msFullscreenElement ?? null;
+    return (
+      doc.fullscreenElement ??
+      doc.webkitFullscreenElement ??
+      doc.mozFullscreenElement ??
+      doc.msFullscreenElement ??
+      null
+    );
   }, []);
 
   const isInFullscreen = useCallback(() => Boolean(getFullscreenElement()), [getFullscreenElement]);
@@ -230,7 +237,9 @@ function AttemptRuntimeView({
   );
   const [isRequestingFullscreen, setIsRequestingFullscreen] = useState(false);
 
-  const requestFullscreen = useCallback(async () => {
+  const requestFullscreen = useCallback(async (options?: { showError?: boolean }) => {
+    const showError = options?.showError ?? false;
+
     if (typeof document === "undefined") {
       setIsFullscreenReady(true);
       return true;
@@ -267,9 +276,11 @@ function AttemptRuntimeView({
       return true;
     } catch {
       setIsFullscreenReady(false);
-      setRequestError(
-        "Fullscreen mode is required for the exam. Click 'Enter Fullscreen' to continue.",
-      );
+      if (showError) {
+        setRequestError(
+          "Fullscreen mode is required for the exam. Click 'Enter Fullscreen' to continue.",
+        );
+      }
       return false;
     } finally {
       setIsRequestingFullscreen(false);
@@ -281,8 +292,26 @@ function AttemptRuntimeView({
       return;
     }
 
-    void requestFullscreen();
+    void requestFullscreen({ showError: false });
   }, [requestFullscreen, runtime.status]);
+
+  useEffect(() => {
+    if (runtime.status !== "IN_PROGRESS" || isFullscreenReady) {
+      return;
+    }
+
+    const retryOnInteraction = () => {
+      void requestFullscreen({ showError: false });
+    };
+
+    window.addEventListener("pointerdown", retryOnInteraction, { once: true });
+    window.addEventListener("keydown", retryOnInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", retryOnInteraction);
+      window.removeEventListener("keydown", retryOnInteraction);
+    };
+  }, [isFullscreenReady, requestFullscreen, runtime.status]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -293,12 +322,28 @@ function AttemptRuntimeView({
       }
     };
 
+    const fullscreenPoll = window.setInterval(onFullscreenChange, 300);
+    onFullscreenChange();
+
     document.addEventListener("fullscreenchange", onFullscreenChange);
     document.addEventListener("webkitfullscreenchange", onFullscreenChange as EventListener);
+    document.addEventListener("mozfullscreenchange", onFullscreenChange as EventListener);
+    document.addEventListener("MSFullscreenChange", onFullscreenChange as EventListener);
+    window.addEventListener("fullscreenchange", onFullscreenChange as EventListener);
+    window.addEventListener("webkitfullscreenchange", onFullscreenChange as EventListener);
+    window.addEventListener("mozfullscreenchange", onFullscreenChange as EventListener);
+    window.addEventListener("MSFullscreenChange", onFullscreenChange as EventListener);
 
     return () => {
+      window.clearInterval(fullscreenPoll);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       document.removeEventListener("webkitfullscreenchange", onFullscreenChange as EventListener);
+      document.removeEventListener("mozfullscreenchange", onFullscreenChange as EventListener);
+      document.removeEventListener("MSFullscreenChange", onFullscreenChange as EventListener);
+      window.removeEventListener("fullscreenchange", onFullscreenChange as EventListener);
+      window.removeEventListener("webkitfullscreenchange", onFullscreenChange as EventListener);
+      window.removeEventListener("mozfullscreenchange", onFullscreenChange as EventListener);
+      window.removeEventListener("MSFullscreenChange", onFullscreenChange as EventListener);
     };
   }, [isInFullscreen, setRequestError]);
 
@@ -372,7 +417,7 @@ function AttemptRuntimeView({
           <Button
             className="mt-4 rounded-xl"
             onClick={() => {
-              void requestFullscreen();
+              void requestFullscreen({ showError: true });
             }}
             disabled={isRequestingFullscreen}
           >
