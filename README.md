@@ -10,8 +10,8 @@ Shared contracts/utilities: `src/types` (grouped types), `src/lib` (reusable hel
 
 ## Live Demo And Recording
 
-- Live Demo: Add your deployed URL here
-- Video Walkthrough: Add your recording URL here
+- Live Demo: https://akij-assesment.vercel.app/
+- Video Walkthrough: [Video Demo](https://www.loom.com/share/d1541247337b42a39f8a161ad511c09f)
 
 ## Repository Highlights
 
@@ -182,12 +182,12 @@ How MCP can be used here:
 
 ### 2. AI Tools For Development
 
-Tools/processes used and recommended:
+Tools/processes used:
 - GitHub Copilot for in-editor code completion and refactoring (Opus4.6 and GPT 5.3 Codex)
 - Chat-based AI assistants for architecture planning and debugging race conditions
 - Prompt-driven test checklist generation for critical paths (timeout/violation/forced submit)
 
-Recommended workflow:
+Workflow:
 - Generate scaffold and repetitive boilerplate with AI
 - Manually verify business rules and edge cases
 - Run lint/typecheck and execute scenario testing after each major change
