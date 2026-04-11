@@ -37,6 +37,7 @@ export default async function CandidateAttemptPage({ params }: PageProps) {
     <main className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
       <CandidateAttemptRunner
         attemptId={attemptId}
+        candidateDisplayName={user.name?.trim() || user.email}
         initialRuntime={{
           attemptId: runtime.attemptId,
           examId: runtime.examId,
