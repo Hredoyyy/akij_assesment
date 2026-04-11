@@ -10,8 +10,12 @@ export type EmployerExamSummary = {
   createdAt: Date;
   updatedAt: Date;
   candidates: Array<{
+    attemptId: string;
     candidateName: string;
     score: number | null;
+    violations: number;
+    requiresTextGrading: boolean;
+    isTextGraded: boolean;
     status: "IN_PROGRESS" | "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
   }>;
 };

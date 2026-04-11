@@ -114,6 +114,7 @@ model ExamAttempt {
   examSlotId  String
   startedAt   DateTime      @default(now())
   submittedAt DateTime?
+  textAnswersGradedAt DateTime?
   score       Float?
   violations  Int           @default(0)
   status      AttemptStatus @default(IN_PROGRESS)
@@ -135,6 +136,7 @@ model Answer {
   questionId        String
   selectedOptionIds String[]
   textAnswer        String?
+  manualTextScore   Float    @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

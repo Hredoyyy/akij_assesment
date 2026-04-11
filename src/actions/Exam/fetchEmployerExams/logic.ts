@@ -15,8 +15,12 @@ type EmployerExamSummary = {
   createdAt: Date;
   updatedAt: Date;
   candidates: Array<{
+    attemptId: string;
     candidateName: string;
     score: number | null;
+    violations: number;
+    requiresTextGrading: boolean;
+    isTextGraded: boolean;
     status: "IN_PROGRESS" | "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
   }>;
 };
@@ -65,8 +69,24 @@ export async function fetchEmployerExamsAction(
           },
         },
         select: {
+          id: true,
           score: true,
+          violations: true,
+          textAnswersGradedAt: true,
           status: true,
+          answers: {
+            where: {
+              question: {
+                type: "TEXT",
+              },
+              textAnswer: {
+                not: null,
+              },
+            },
+            select: {
+              id: true,
+            },
+          },
           candidate: {
             select: {
               name: true,
@@ -97,8 +117,12 @@ export async function fetchEmployerExamsAction(
       candidates: exam.attempts
         .filter((attempt) => isFinalAttemptStatus(attempt.status))
         .map((attempt) => ({
+          attemptId: attempt.id,
           candidateName: attempt.candidate.name ?? attempt.candidate.email,
           score: attempt.score,
+          violations: attempt.violations,
+          requiresTextGrading: attempt.answers.length > 0,
+          isTextGraded: attempt.answers.length === 0 || attempt.textAnswersGradedAt !== null,
           status: attempt.status,
         }))
         .sort((a, b) => (b.score ?? Number.NEGATIVE_INFINITY) - (a.score ?? Number.NEGATIVE_INFINITY)),

@@ -16,10 +16,7 @@ export function EmployerDashboardHeader({ search, onSearchChange }: EmployerDash
       <h2 className="text-2xl font-semibold leading-[130%] text-slate-700">Online Tests</h2>
 
       <div className="flex w-full flex-wrap items-center justify-end gap-3 lg:w-auto">
-        <DashboardSearchBar value={search} onChange={onSearchChange} />
-        <Button asChild variant="outline" className="h-12 rounded-xl border-primary px-6 font-semibold text-primary">
-          <Link href="/candidate/dashboard">Switch Dashboard</Link>
-        </Button>
+        <DashboardSearchBar value={search} onChange={onSearchChange} className="lg:mr-30"/>
         <Button asChild className="h-12 rounded-xl px-8 font-semibold">
           <Link href="/employer/tests/new">Add New Test</Link>
         </Button>

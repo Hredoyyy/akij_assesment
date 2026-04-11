@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getDashboardPathByRole } from "@/lib/routes";
 
+import { DashboardRoleSwitcher } from "../DashboardRoleSwitcher/DashboardRoleSwitcher";
 import { HeaderTitle } from "../HeaderTitle/HeaderTitle";
 import { UserProfileMenu } from "../UserProfileMenu/UserProfileMenu";
 
@@ -31,7 +32,10 @@ export async function TopNav() {
 
         <div className="app-header-right">
           {user ? (
-            <UserProfileMenu user={user} />
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <DashboardRoleSwitcher role={user.role} />
+              <UserProfileMenu user={user} />
+            </div>
           ) : null}
         </div>
       </nav>

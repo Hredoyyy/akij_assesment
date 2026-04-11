@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Answer"
+ADD COLUMN "manualTextScore" DOUBLE PRECISION NOT NULL DEFAULT 0;

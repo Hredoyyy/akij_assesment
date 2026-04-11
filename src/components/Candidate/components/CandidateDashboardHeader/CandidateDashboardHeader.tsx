@@ -16,7 +16,7 @@ export function CandidateDashboardHeader({ search, onSearchChange }: CandidateDa
         <DashboardSearchBar
           value={search}
           onChange={onSearchChange}
-          className="border border-[#E5E7EB]"
+          className="border border-[#E5E7EB] lg:mr-30"
           inputClassName="text-[#7C8493]"
         />
       </div>

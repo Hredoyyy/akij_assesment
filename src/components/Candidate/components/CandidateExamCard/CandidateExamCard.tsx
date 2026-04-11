@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleX, Clock3, FileText } from "lucide-react";
+import { CalendarClock, CircleX, Clock3, FileText } from "lucide-react";
 
 import type { CandidateAvailableExam } from "@/components/Candidate/components/CandidateDashboardTypes/CandidateDashboardTypes";
 
@@ -17,6 +17,22 @@ export function CandidateExamCard({
   currentTimestamp,
   onStartExam,
 }: CandidateExamCardProps) {
+  const slotStartLabel = new Date(exam.slotStartTime).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const slotEndLabel = new Date(exam.slotEndTime).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
   const isUpcoming = new Date(exam.slotStartTime).getTime() > currentTimestamp;
   const isCompleted =
     exam.attemptStatus === "SUBMITTED" ||
@@ -80,9 +96,13 @@ export function CandidateExamCard({
         </div>
       </div>
 
-      <p className="text-xs text-slate-500">
-        Slot {exam.slotNumber} • {new Date(exam.slotStartTime).toLocaleString()} - {new Date(exam.slotEndTime).toLocaleString()}
-      </p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-slate-700">
+          <CalendarClock className="h-5 w-5 text-slate-400" aria-hidden="true" />
+          <span className="font-medium">Slot {exam.slotNumber}:</span>
+          <span className="font-normal text-slate-600">{slotStartLabel} - {slotEndLabel}</span>
+        </div>
+      </div>
 
       <div
         className="mt-1"

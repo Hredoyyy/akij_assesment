@@ -601,68 +601,91 @@ function AttemptRuntimeView({
 
       {view === "review" ? (
         <>
-          <div className="mt-6 space-y-4">
-            {runtime.questions.map((question, index) => {
-              const answer = answerState[question.id];
-              const selectedOptions = question.options
-                .filter((option) => answer?.selectedOptionIds?.includes(option.id))
-                .map((option) => option.text);
+          <article className="mt-6 rounded-2xl border border-[#E5E7EB] bg-white p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-[20px] font-medium leading-6 text-slate-700">Final Review</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Confirm your responses before submitting the exam.
+                </p>
+              </div>
+              <div className="inline-flex items-center rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">
+                {runtime.questions.length} Questions
+              </div>
+            </div>
 
-              return (
-                <article key={question.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-start gap-1 text-sm font-semibold text-slate-900">
-                        <span>{index + 1}.</span>
-                        <h2
-                          className="candidate-rich-text"
-                          dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(question.title) }}
-                        />
-                      </div>
-                      {question.type === "TEXT" ? (
-                        answer?.textAnswer?.trim() ? (
-                          <div
-                            className="candidate-rich-text mt-1 text-sm text-slate-600"
-                            dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(answer.textAnswer) }}
+            <div className="mt-6 space-y-4">
+              {runtime.questions.map((question, index) => {
+                const answer = answerState[question.id];
+                const selectedOptions = question.options
+                  .filter((option) => answer?.selectedOptionIds?.includes(option.id))
+                  .map((option) => option.text);
+
+                return (
+                  <article key={question.id} className="rounded-xl border border-[#E5E7EB] bg-white p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-start gap-1 text-sm font-semibold text-slate-900">
+                          <span>{index + 1}.</span>
+                          <h2
+                            className="candidate-rich-text"
+                            dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(question.title) }}
                           />
+                        </div>
+                        {question.type === "TEXT" ? (
+                          answer?.textAnswer?.trim() ? (
+                            <div
+                              className="candidate-rich-text mt-1 text-sm text-slate-600"
+                              dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(answer.textAnswer) }}
+                            />
+                          ) : (
+                            <p className="mt-1 text-sm text-slate-600">No answer saved</p>
+                          )
+                        ) : selectedOptions.length > 0 ? (
+                          <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-slate-600">
+                            {selectedOptions.map((selectedOption, selectedOptionIndex) => (
+                              <li
+                                key={`${question.id}-${selectedOptionIndex}`}
+                                className="candidate-rich-text"
+                                dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(selectedOption) }}
+                              />
+                            ))}
+                          </ul>
                         ) : (
                           <p className="mt-1 text-sm text-slate-600">No answer saved</p>
-                        )
-                      ) : selectedOptions.length > 0 ? (
-                        <ul className="mt-1 list-inside list-disc space-y-1 text-sm text-slate-600">
-                          {selectedOptions.map((selectedOption, selectedOptionIndex) => (
-                            <li
-                              key={`${question.id}-${selectedOptionIndex}`}
-                              className="candidate-rich-text"
-                              dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(selectedOption) }}
-                            />
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mt-1 text-sm text-slate-600">No answer saved</p>
-                      )}
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-lg border-[#E5E7EB] px-4 text-slate-700"
+                        onClick={() => {
+                          setCurrentQuestionIndex(index);
+                          setView("question");
+                        }}
+                      >
+                        Edit
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setCurrentQuestionIndex(index);
-                        setView("question");
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                  </article>
+                );
+              })}
+            </div>
+          </article>
 
           <div className="mt-6 flex flex-wrap justify-between gap-3">
-            <Button variant="outline" onClick={() => setView("question")}>
+            <Button
+              variant="outline"
+              className="h-12 min-w-[180px] rounded-xl border-[#E5E7EB] bg-white px-8 text-base font-semibold text-slate-700"
+              onClick={() => setView("question")}
+            >
               Back to Questions
             </Button>
-            <Button disabled={isSubmitting} onClick={() => void submitFinalAttempt()}>
+            <Button
+              className="h-12 min-w-[180px] rounded-xl bg-primary px-8 text-base font-semibold text-white"
+              disabled={isSubmitting}
+              onClick={() => void submitFinalAttempt()}
+            >
               {isSubmitting ? "Submitting..." : "Submit Exam"}
             </Button>
           </div>

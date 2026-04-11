@@ -59,10 +59,16 @@ export function EmployerExamCard({ exam }: EmployerExamCardProps) {
         onKeyDown={(event) => event.stopPropagation()}
       >
         <CandidateRankingDialog
+          examId={exam.id}
           examTitle={exam.title}
           candidates={exam.candidates.map((candidate) => ({
+            attemptId: candidate.attemptId,
             candidateName: candidate.candidateName,
             score: candidate.score,
+            violations: candidate.violations,
+            requiresTextGrading: candidate.requiresTextGrading,
+            isTextGraded: candidate.isTextGraded,
+            status: candidate.status,
           }))}
         />
       </div>
