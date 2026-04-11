@@ -6,13 +6,7 @@ import { QuestionDialog } from "@/components/Employer/QuestionDialog/QuestionDia
 import { Button } from "@/components/ui/button";
 import { sanitizeRichTextHtml } from "@/lib/richText";
 import type { DraftQuestion } from "@/stores/examDraftStore";
-
-type QuestionPreviewCardProps = {
-  question: DraftQuestion;
-  questionNumber: number;
-  onEdit: (questionId: string, question: Omit<DraftQuestion, "id" | "options"> & { options: Array<{ text: string; isCorrect: boolean }> }) => Promise<void>;
-  onDelete: (questionId: string) => Promise<void>;
-};
+import type { QuestionPreviewCardProps } from "@/types/employer/components";
 
 const typeLabelMap: Record<DraftQuestion["type"], string> = {
   RADIO: "MCQ",

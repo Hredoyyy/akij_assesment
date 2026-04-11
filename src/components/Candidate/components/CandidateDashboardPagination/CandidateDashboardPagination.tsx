@@ -1,14 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-
-type CandidateDashboardPaginationProps = {
-  page: number;
-  totalPages: number;
-  pageSize: number;
-  onPrevPage: () => void;
-  onNextPage: () => void;
-};
+import type { CandidateDashboardPaginationProps } from "@/types/candidate/components";
 
 export function CandidateDashboardPagination({
   page,

@@ -1,14 +1,7 @@
 "use client";
 
-import type { DraftQuestion } from "@/stores/examDraftStore";
-
 import { QuestionPreviewCard } from "@/components/Employer/components/QuestionPreviewCard/QuestionPreviewCard";
-
-type QuestionListPanelProps = {
-  questions: DraftQuestion[];
-  onEditQuestion: (questionId: string, question: Omit<DraftQuestion, "id" | "options"> & { options: Array<{ text: string; isCorrect: boolean }> }) => Promise<void>;
-  onDeleteQuestion: (questionId: string) => Promise<void>;
-};
+import type { QuestionListPanelProps } from "@/types/employer/components";
 
 export function QuestionListPanel({ questions, onEditQuestion, onDeleteQuestion }: QuestionListPanelProps) {
   if (questions.length === 0) {

@@ -2,14 +2,7 @@
 
 import { CalendarClock, CircleX, Clock3, FileText } from "lucide-react";
 
-import type { CandidateAvailableExam } from "@/components/Candidate/components/CandidateDashboardTypes/CandidateDashboardTypes";
-
-type CandidateExamCardProps = {
-  exam: CandidateAvailableExam;
-  startingExamId: string | null;
-  currentTimestamp: number;
-  onStartExam: (examId: string) => void;
-};
+import type { CandidateExamCardProps } from "@/types/candidate/cards";
 
 export function CandidateExamCard({
   exam,
@@ -18,7 +11,6 @@ export function CandidateExamCard({
   onStartExam,
 }: CandidateExamCardProps) {
   const slotStartLabel = new Date(exam.slotStartTime).toLocaleString(undefined, {
-    year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -26,7 +18,6 @@ export function CandidateExamCard({
   });
 
   const slotEndLabel = new Date(exam.slotEndTime).toLocaleString(undefined, {
-    year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",

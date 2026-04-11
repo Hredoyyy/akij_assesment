@@ -3,12 +3,7 @@
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-
-type AttemptResultCardProps = {
-  examTitle: string;
-  candidateDisplayName: string;
-  onBackToDashboard: () => void;
-};
+import type { AttemptResultCardProps } from "@/types/candidate/components";
 
 export function AttemptResultCard({
   examTitle,
@@ -30,7 +25,7 @@ export function AttemptResultCard({
         <Button
           variant="outline"
           onClick={onBackToDashboard}
-          className="h-12 min-w-[180px] rounded-xl border-[#E5E7EB] px-8 text-base font-semibold text-slate-700"
+          className="h-12 w-full rounded-xl border-[#E5E7EB] px-8 text-base font-semibold text-slate-700 sm:w-auto sm:min-w-[180px]"
         >
           Back to Dashboard
         </Button>

@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-
-type UseExamTimerOptions = {
-  initialSeconds: number;
-  onExpire: () => Promise<void> | void;
-};
+import type { UseExamTimerOptions } from "@/types/hooks";
 
 export function useExamTimer({ initialSeconds, onExpire }: UseExamTimerOptions) {
   const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds);

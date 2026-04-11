@@ -1,36 +1,8 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-
-type PendingAnswer = {
-  attemptId: string;
-  questionId: string;
-  selectedOptionIds: string[];
-  textAnswer?: string;
-};
-
-type UseOfflineSyncOptions = {
-  queueKey: string;
-  onFlushItem: (item: PendingAnswer) => Promise<void>;
-};
-
-const readQueue = (queueKey: string): PendingAnswer[] => {
-  try {
-    const raw = window.localStorage.getItem(queueKey);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw) as PendingAnswer[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
-
-const writeQueue = (queueKey: string, data: PendingAnswer[]) => {
-  window.localStorage.setItem(queueKey, JSON.stringify(data));
-};
+import { readQueue, writeQueue } from "@/lib/candidate/offlineSync";
+import type { PendingAnswer, UseOfflineSyncOptions } from "@/types/hooks";
 
 export function useOfflineSync({ queueKey, onFlushItem }: UseOfflineSyncOptions) {
   const enqueue = useCallback(

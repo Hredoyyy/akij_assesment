@@ -4,11 +4,7 @@ import { ClockFading, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { CandidateRankingDialog } from "@/components/Employer/components/CandidateRankingDialog/CandidateRankingDialog";
-import type { EmployerExamSummary } from "@/components/Employer/components/EmployerDashboardTypes/EmployerDashboardTypes";
-
-type EmployerExamCardProps = {
-  exam: EmployerExamSummary;
-};
+import type { EmployerExamCardProps } from "@/types/employer/components";
 
 export function EmployerExamCard({ exam }: EmployerExamCardProps) {
   const router = useRouter();

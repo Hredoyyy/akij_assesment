@@ -11,15 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
-type RichTextEditorProps = {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  minHeightClassName?: string;
-  showList?: boolean;
-  showUnderline?: boolean;
-};
+import type { RichTextEditorProps } from "@/types/shared/components";
 
 export function RichTextEditor({
   value,

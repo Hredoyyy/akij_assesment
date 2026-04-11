@@ -5,11 +5,7 @@ import { useMemo, useState } from "react";
 import { EmployerDashboardHeader } from "@/components/Employer/components/EmployerDashboardHeader/EmployerDashboardHeader";
 import { EmptyExamListState } from "@/components/Employer/components/EmptyExamListState/EmptyExamListState";
 import { EmployerExamCard } from "@/components/Employer/components/EmployerExamCard/EmployerExamCard";
-import type { EmployerExamSummary } from "@/components/Employer/components/EmployerDashboardTypes/EmployerDashboardTypes";
-
-type EmployerDashboardPanelProps = {
-  exams: EmployerExamSummary[];
-};
+import type { EmployerDashboardPanelProps } from "@/types/employer/components";
 
 export function EmployerDashboardPanel({ exams }: EmployerDashboardPanelProps) {
   const [search, setSearch] = useState("");

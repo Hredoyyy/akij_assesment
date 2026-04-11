@@ -3,13 +3,7 @@
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-
-type AttemptTerminationDialogProps = {
-  status: "TIMED_OUT" | "VIOLATION_TERMINATED";
-  examTitle: string;
-  open: boolean;
-  onBackToDashboard: () => void;
-};
+import type { AttemptTerminationDialogProps } from "@/types/candidate/components";
 
 export function AttemptTerminationDialog({
   status,
@@ -44,7 +38,7 @@ export function AttemptTerminationDialog({
           <Button
             variant="outline"
             onClick={onBackToDashboard}
-            className="h-12 min-w-[180px] rounded-xl border-[#E5E7EB] px-8 text-base font-semibold text-slate-700"
+            className="h-12 w-full rounded-xl border-[#E5E7EB] px-8 text-base font-semibold text-slate-700 sm:w-auto sm:min-w-[180px]"
           >
             Back to Dashboard
           </Button>

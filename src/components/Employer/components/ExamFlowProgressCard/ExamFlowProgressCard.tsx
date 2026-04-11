@@ -3,12 +3,7 @@
 import { Check } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-
-type ExamFlowProgressCardProps = {
-  step: 1 | 2;
-  onBackToDashboard: () => void;
-  onStepClick?: (step: 1 | 2) => void;
-};
+import type { ExamFlowProgressCardProps } from "@/types/employer/components";
 
 export function ExamFlowProgressCard({ step, onBackToDashboard, onStepClick }: ExamFlowProgressCardProps) {
   const isQuestionStep = step === 2;

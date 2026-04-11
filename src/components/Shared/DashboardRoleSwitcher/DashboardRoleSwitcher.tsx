@@ -4,11 +4,7 @@ import Link from "next/link";
 import { ArrowLeftRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 
-import type { UserRole } from "@/types/auth";
-
-type DashboardRoleSwitcherProps = {
-  role: UserRole;
-};
+import type { DashboardRoleSwitcherProps } from "@/types/shared/components";
 
 export function DashboardRoleSwitcher({ role }: DashboardRoleSwitcherProps) {
   const pathname = usePathname();
@@ -30,7 +26,7 @@ export function DashboardRoleSwitcher({ role }: DashboardRoleSwitcherProps) {
       aria-label={tooltipLabel}
       title={tooltipLabel}
     >
-        <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+      <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
     </Link>
   );
 }

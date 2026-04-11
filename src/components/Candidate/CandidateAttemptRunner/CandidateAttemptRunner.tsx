@@ -3,7 +3,7 @@
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 
 import { AttemptResultCard } from "@/components/Candidate/components/AttemptResultCard/AttemptResultCard";
 import { AttemptTerminationDialog } from "@/components/Candidate/components/AttemptTerminationDialog/AttemptTerminationDialog";
@@ -11,152 +11,24 @@ import { RichTextEditor } from "@/components/Shared/RichTextEditor/RichTextEdito
 import { Button } from "@/components/ui/button";
 import { useBehaviorTracking } from "@/hooks/useBehaviorTracking";
 import { useExamTimer } from "@/hooks/useExamTimer";
+import {
+  buildSaveBatchAnswers,
+  clearDraftFromStorage,
+  readDraftFromStorage,
+  toAnswerState,
+  toTimeText,
+  writeDraftToStorage,
+} from "@/lib/candidate/attemptRuntime";
 import { sanitizeRichTextHtml } from "@/lib/richText";
-
-type RuntimeQuestion = {
-  id: string;
-  title: string;
-  type: "CHECKBOX" | "RADIO" | "TEXT";
-  points: number;
-  order: number;
-  options: Array<{ id: string; text: string }>;
-};
-
-type RuntimeAnswer = {
-  questionId: string;
-  selectedOptionIds: string[];
-  textAnswer: string | null;
-};
-
-type AttemptRuntime = {
-  attemptId: string;
-  examId: string;
-  examTitle: string;
-  status: "IN_PROGRESS" | "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
-  durationMinutes: number;
-  remainingSeconds: number;
-  violations: number;
-  questions: RuntimeQuestion[];
-  answers: RuntimeAnswer[];
-};
-
-type SaveAnswerInput = {
-  attemptId: string;
-  questionId: string;
-  selectedOptionIds: string[];
-  textAnswer?: string;
-};
-
-type SubmitAttemptResponse = {
-  success: true;
-  data: {
-    attemptId: string;
-    status: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
-    score: number | null;
-  };
-};
-
-type AnswerDraftPayload = {
-  currentQuestionIndex: number;
-  answers: RuntimeAnswer[];
-};
-
-type CandidateAttemptRunnerProps = {
-  attemptId: string;
-  initialRuntime: AttemptRuntime;
-  candidateDisplayName: string;
-};
-
-const toTimeText = (seconds: number) => {
-  const min = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const sec = (seconds % 60).toString().padStart(2, "0");
-  return `${min}:${sec}`;
-};
-
-const getAnswerDraftKey = (attemptId: string) => `attempt-${attemptId}-answers-draft-v1`;
-
-const toAnswerState = (answers: RuntimeAnswer[]) =>
-  answers.reduce<Record<string, RuntimeAnswer>>((acc, answer) => {
-    acc[answer.questionId] = answer;
-    return acc;
-  }, {});
-
-const readDraftFromStorage = (attemptId: string): AnswerDraftPayload | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(getAnswerDraftKey(attemptId));
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw) as Partial<AnswerDraftPayload>;
-    const answers = Array.isArray(parsed.answers)
-      ? parsed.answers.map((answer) => ({
-          questionId: String(answer.questionId ?? ""),
-          selectedOptionIds: Array.isArray(answer.selectedOptionIds)
-            ? answer.selectedOptionIds.map((id) => String(id))
-            : [],
-          textAnswer:
-            answer.textAnswer === null || typeof answer.textAnswer === "string"
-              ? answer.textAnswer
-              : null,
-        }))
-      : [];
-
-    return {
-      currentQuestionIndex: Math.max(0, Number(parsed.currentQuestionIndex ?? 0)),
-      answers,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const writeDraftToStorage = (
-  attemptId: string,
-  currentQuestionIndex: number,
-  answerState: Record<string, RuntimeAnswer>,
-) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const payload: AnswerDraftPayload = {
-    currentQuestionIndex,
-    answers: Object.values(answerState),
-  };
-
-  window.localStorage.setItem(getAnswerDraftKey(attemptId), JSON.stringify(payload));
-};
-
-const clearDraftFromStorage = (attemptId: string) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.removeItem(getAnswerDraftKey(attemptId));
-};
-
-const hasTextContent = (value: string | null | undefined): boolean => {
-  if (!value?.trim()) {
-    return false;
-  }
-
-  if (typeof window === "undefined") {
-    return value.trim().length > 0;
-  }
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(value, "text/html");
-  const plainText = (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
-
-  return plainText.length > 0;
-};
+import type {
+  AttemptFinalStatus,
+  AttemptRuntime,
+  AttemptRuntimeViewProps,
+  CandidateAttemptRunnerProps,
+  RuntimeAnswer,
+  SaveAnswerInput,
+  SubmitAttemptResponse,
+} from "@/types/candidate/attempt";
 
 export function CandidateAttemptRunner({
   attemptId,
@@ -172,9 +44,7 @@ export function CandidateAttemptRunner({
     typeof navigator === "undefined" ? true : navigator.onLine,
   );
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [finishedStatus, setFinishedStatus] = useState<
-    "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED" | null
-  >(
+  const [finishedStatus, setFinishedStatus] = useState<AttemptFinalStatus | null>(
     initialRuntime.status === "IN_PROGRESS" ? null : initialRuntime.status,
   );
   const [answerState, setAnswerState] = useState<Record<string, RuntimeAnswer>>(
@@ -216,7 +86,7 @@ export function CandidateAttemptRunner({
     writeDraftToStorage(attemptId, currentQuestionIndex, answerState);
   }, [answerState, attemptId, currentQuestionIndex]);
 
-  const submitAttempt = useCallback(async (status: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED") => {
+  const submitAttempt = useCallback(async (status: AttemptFinalStatus) => {
     const response = await axios.post<SubmitAttemptResponse>(
       `/api/candidate/attempts/${attemptId}/submit`,
       { status },
@@ -243,36 +113,7 @@ export function CandidateAttemptRunner({
   };
 
   const saveAllAnswers = useCallback(async () => {
-    const answers = runtime.questions.flatMap((question) => {
-      const answer = answerState[question.id];
-      const selectedOptionIds = answer?.selectedOptionIds ?? [];
-      const textAnswer = answer?.textAnswer ?? "";
-
-      if (question.type === "TEXT") {
-        if (!hasTextContent(textAnswer)) {
-          return [];
-        }
-
-        return [
-          {
-            questionId: question.id,
-            selectedOptionIds: [],
-            textAnswer,
-          },
-        ];
-      }
-
-      if (selectedOptionIds.length === 0) {
-        return [];
-      }
-
-      return [
-        {
-          questionId: question.id,
-          selectedOptionIds,
-        },
-      ];
-    });
+    const answers = buildSaveBatchAnswers(runtime.questions, answerState);
 
     await axios.post("/api/candidate/answers/batch", {
       attemptId,
@@ -282,7 +123,7 @@ export function CandidateAttemptRunner({
 
   const submitAttemptWithSavedAnswers = useCallback(
     async (
-      status: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED",
+      status: AttemptFinalStatus,
       options?: { skipSave?: boolean },
     ) => {
       if (!options?.skipSave) {
@@ -350,33 +191,6 @@ export function CandidateAttemptRunner({
   );
 }
 
-type AttemptRuntimeViewProps = {
-  attemptId: string;
-  runtime: AttemptRuntime;
-  answerState: Record<string, RuntimeAnswer>;
-  isSubmitting: boolean;
-  submitAttemptWithSavedAnswers: (
-    status: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED",
-    options?: { skipSave?: boolean },
-  ) => Promise<"SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED">;
-  saveAllAnswers: () => Promise<void>;
-  setRuntime: React.Dispatch<React.SetStateAction<AttemptRuntime>>;
-  updateAnswer: (payload: SaveAnswerInput) => void;
-  currentQuestion: RuntimeQuestion | null;
-  currentQuestionIndex: number;
-  setCurrentQuestionIndex: (value: number) => void;
-  isLastQuestion: boolean;
-  view: "question" | "review";
-  setView: (value: "question" | "review") => void;
-  submitFinalAttempt: () => Promise<void>;
-  isOnline: boolean;
-  requestError: string | null;
-  setRequestError: (value: string | null) => void;
-  finishedStatus: "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED" | null;
-  onBackToDashboard: () => void;
-  candidateDisplayName: string;
-};
-
 function AttemptRuntimeView({
   attemptId,
   runtime,
@@ -400,6 +214,94 @@ function AttemptRuntimeView({
   onBackToDashboard,
   candidateDisplayName,
 }: AttemptRuntimeViewProps) {
+  const getFullscreenElement = useCallback(() => {
+    const doc = document as Document & {
+      webkitFullscreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+    };
+
+    return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? doc.msFullscreenElement ?? null;
+  }, []);
+
+  const isInFullscreen = useCallback(() => Boolean(getFullscreenElement()), [getFullscreenElement]);
+
+  const [isFullscreenReady, setIsFullscreenReady] = useState(
+    typeof document === "undefined" ? true : isInFullscreen(),
+  );
+  const [isRequestingFullscreen, setIsRequestingFullscreen] = useState(false);
+
+  const requestFullscreen = useCallback(async () => {
+    if (typeof document === "undefined") {
+      setIsFullscreenReady(true);
+      return true;
+    }
+
+    if (isInFullscreen()) {
+      setIsFullscreenReady(true);
+      setRequestError(null);
+      return true;
+    }
+
+    const root = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    };
+
+    const fullscreenRequest =
+      root.requestFullscreen?.bind(root) ??
+      root.webkitRequestFullscreen?.bind(root) ??
+      root.msRequestFullscreen?.bind(root);
+
+    if (!fullscreenRequest) {
+      // If Fullscreen API is unavailable on the browser/device, avoid blocking the attempt UI.
+      setIsFullscreenReady(true);
+      setRequestError(null);
+      return true;
+    }
+
+    try {
+      setIsRequestingFullscreen(true);
+      await fullscreenRequest();
+      setIsFullscreenReady(true);
+      setRequestError(null);
+      return true;
+    } catch {
+      setIsFullscreenReady(false);
+      setRequestError(
+        "Fullscreen mode is required for the exam. Click 'Enter Fullscreen' to continue.",
+      );
+      return false;
+    } finally {
+      setIsRequestingFullscreen(false);
+    }
+  }, [isInFullscreen, setRequestError]);
+
+  useEffect(() => {
+    if (runtime.status !== "IN_PROGRESS") {
+      return;
+    }
+
+    void requestFullscreen();
+  }, [requestFullscreen, runtime.status]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      const active = isInFullscreen();
+      setIsFullscreenReady(active);
+      if (active) {
+        setRequestError(null);
+      }
+    };
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange as EventListener);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", onFullscreenChange as EventListener);
+    };
+  }, [isInFullscreen, setRequestError]);
+
   const { remainingSeconds } = useExamTimer({
     initialSeconds: runtime.remainingSeconds,
     onExpire: async () => {
@@ -461,6 +363,24 @@ function AttemptRuntimeView({
   return (
     <>
       <section className="mx-auto mt-12 w-full max-w-[849px] space-y-6">
+      {runtime.status === "IN_PROGRESS" && !isFullscreenReady ? (
+        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
+          <h2 className="text-lg font-semibold text-amber-900">Enter Fullscreen to Continue</h2>
+          <p className="mt-2 text-sm text-amber-800">
+            Fullscreen mode is mandatory during the exam. Exiting fullscreen counts as a violation.
+          </p>
+          <Button
+            className="mt-4 rounded-xl"
+            onClick={() => {
+              void requestFullscreen();
+            }}
+            disabled={isRequestingFullscreen}
+          >
+            {isRequestingFullscreen ? "Requesting Fullscreen..." : "Enter Fullscreen"}
+          </Button>
+        </article>
+      ) : null}
+
       <header className="rounded-2xl border border-[#E5E7EB] bg-white px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-[20px] font-medium leading-6 text-slate-700">
@@ -474,7 +394,36 @@ function AttemptRuntimeView({
         </div>
       </header>
 
-      <p className="text-sm font-medium text-slate-600">Violations: {runtime.violations} / 3</p>
+      <div
+        className={`rounded-xl border px-4 py-3 ${
+          runtime.violations >= 2
+            ? "border-rose-300 bg-rose-50"
+            : "border-amber-200 bg-amber-50"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle
+              className={`h-5 w-5 ${runtime.violations >= 2 ? "text-rose-600" : "text-amber-600"}`}
+              aria-hidden="true"
+            />
+            <p
+              className={`text-sm font-semibold ${
+                runtime.violations >= 2 ? "text-rose-700" : "text-amber-700"
+              }`}
+            >
+              Violation Monitor
+            </p>
+          </div>
+          <p
+            className={`text-lg font-bold ${
+              runtime.violations >= 2 ? "text-rose-700" : "text-amber-700"
+            }`}
+          >
+            {runtime.violations} / 3
+          </p>
+        </div>
+      </div>
 
       {!isOnline ? (
         <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
@@ -482,7 +431,7 @@ function AttemptRuntimeView({
         </p>
       ) : null}
 
-      {view === "question" && currentQuestion ? (
+      {view === "question" && currentQuestion && isFullscreenReady ? (
         <>
           <article className="rounded-2xl border border-[#E5E7EB] bg-white p-6">
             <h2
@@ -563,7 +512,7 @@ function AttemptRuntimeView({
               </div>
             )}
 
-            <div className="mt-8 flex items-center justify-between gap-5">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -575,7 +524,7 @@ function AttemptRuntimeView({
 
                   setCurrentQuestionIndex(currentQuestionIndex + 1);
                 }}
-                className="h-12 min-w-[180px] rounded-xl border-[#E5E7EB] bg-white px-8 text-base font-semibold text-slate-700"
+                className="h-12 w-full rounded-xl border-[#E5E7EB] bg-white px-8 text-base font-semibold text-slate-700 sm:w-auto sm:min-w-[180px]"
               >
                 Skip this Question
               </Button>
@@ -590,7 +539,7 @@ function AttemptRuntimeView({
 
                   setCurrentQuestionIndex(currentQuestionIndex + 1);
                 }}
-                className="h-12 min-w-[180px] rounded-xl bg-primary px-8 text-base font-semibold text-white"
+                className="h-12 w-full rounded-xl bg-primary px-8 text-base font-semibold text-white sm:w-auto sm:min-w-[180px]"
               >
                 {isLastQuestion ? "Save & Review" : "Save & Continue"}
               </Button>
@@ -599,7 +548,7 @@ function AttemptRuntimeView({
         </>
       ) : null}
 
-      {view === "review" ? (
+      {view === "review" && isFullscreenReady ? (
         <>
           <article className="mt-6 rounded-2xl border border-[#E5E7EB] bg-white p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -673,16 +622,16 @@ function AttemptRuntimeView({
             </div>
           </article>
 
-          <div className="mt-6 flex flex-wrap justify-between gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
             <Button
               variant="outline"
-              className="h-12 min-w-[180px] rounded-xl border-[#E5E7EB] bg-white px-8 text-base font-semibold text-slate-700"
+              className="h-12 w-full rounded-xl border-[#E5E7EB] bg-white px-8 text-base font-semibold text-slate-700 sm:w-auto sm:min-w-[180px]"
               onClick={() => setView("question")}
             >
               Back to Questions
             </Button>
             <Button
-              className="h-12 min-w-[180px] rounded-xl bg-primary px-8 text-base font-semibold text-white"
+              className="h-12 w-full rounded-xl bg-primary px-8 text-base font-semibold text-white sm:w-auto sm:min-w-[180px]"
               disabled={isSubmitting}
               onClick={() => void submitFinalAttempt()}
             >

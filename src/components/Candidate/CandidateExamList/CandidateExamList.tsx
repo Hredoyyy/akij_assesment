@@ -7,24 +7,17 @@ import { useEffect, useMemo, useState } from "react";
 import { CandidateDashboardHeader } from "@/components/Candidate/components/CandidateDashboardHeader/CandidateDashboardHeader";
 import { CandidateDashboardPagination } from "@/components/Candidate/components/CandidateDashboardPagination/CandidateDashboardPagination";
 import { CandidateExamCard } from "@/components/Candidate/components/CandidateExamCard/CandidateExamCard";
+import { ExamStartPolicyDialog } from "@/components/Candidate/components/ExamStartPolicyDialog/ExamStartPolicyDialog";
 import { EmptyExamListState } from "@/components/Employer/components/EmptyExamListState/EmptyExamListState";
-import type { CandidateAvailableExam } from "@/components/Candidate/components/CandidateDashboardTypes/CandidateDashboardTypes";
-
-type CandidateExamListProps = {
-  exams: CandidateAvailableExam[];
-};
-
-type StartAttemptResponse = {
-  success: true;
-  data: {
-    attemptId: string;
-  };
-};
+import type { CandidateAvailableExam } from "@/types/candidate/dashboard";
+import type { CandidateExamListProps, StartAttemptResponse } from "@/types/candidate/examList";
 
 export function CandidateExamList({ exams }: CandidateExamListProps) {
   const router = useRouter();
   const [startingExamId, setStartingExamId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingExam, setPendingExam] = useState<CandidateAvailableExam | null>(null);
+  const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [initialTimestamp] = useState(() => Date.now());
@@ -61,6 +54,17 @@ export function CandidateExamList({ exams }: CandidateExamListProps) {
   const hasNoExams = exams.length === 0;
   const hasNoSearchResults = exams.length > 0 && filteredExams.length === 0;
 
+  const openTermsDialog = (examId: string) => {
+    const exam = exams.find((entry) => entry.examId === examId) ?? null;
+
+    if (!exam) {
+      return;
+    }
+
+    setPendingExam(exam);
+    setIsTermsDialogOpen(true);
+  };
+
   const startExam = async (examId: string) => {
     try {
       setError(null);
@@ -80,6 +84,16 @@ export function CandidateExamList({ exams }: CandidateExamListProps) {
     } finally {
       setStartingExamId(null);
     }
+  };
+
+  const startExamAfterTerms = async () => {
+    if (!pendingExam) {
+      return;
+    }
+
+    setIsTermsDialogOpen(false);
+    await startExam(pendingExam.examId);
+    setPendingExam(null);
   };
 
   return (
@@ -107,7 +121,7 @@ export function CandidateExamList({ exams }: CandidateExamListProps) {
                   startingExamId={startingExamId}
                   currentTimestamp={initialTimestamp}
                   onStartExam={(examId) => {
-                    void startExam(examId);
+                    openTermsDialog(examId);
                   }}
                 />
               );
@@ -125,6 +139,25 @@ export function CandidateExamList({ exams }: CandidateExamListProps) {
       )}
 
       {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
+
+      <ExamStartPolicyDialog
+        open={isTermsDialogOpen}
+        examTitle={pendingExam?.title ?? null}
+        isStarting={Boolean(pendingExam && startingExamId === pendingExam.examId)}
+        onOpenChange={(open) => {
+          setIsTermsDialogOpen(open);
+          if (!open) {
+            setPendingExam(null);
+          }
+        }}
+        onCancel={() => {
+          setIsTermsDialogOpen(false);
+          setPendingExam(null);
+        }}
+        onConfirm={() => {
+          void startExamAfterTerms();
+        }}
+      />
     </section>
   );
 }

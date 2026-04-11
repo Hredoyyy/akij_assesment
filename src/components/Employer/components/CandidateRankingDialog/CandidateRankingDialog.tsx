@@ -15,80 +15,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toClampedScore, toSubmissionMethodLabel } from "@/lib/employer/candidateRanking";
 import { sanitizeRichTextHtml } from "@/lib/richText";
-
-type AttemptStatus = "IN_PROGRESS" | "SUBMITTED" | "TIMED_OUT" | "VIOLATION_TERMINATED";
-
-type CandidateRow = {
-  attemptId: string;
-  candidateName: string;
-  score: number | null;
-  violations: number;
-  requiresTextGrading: boolean;
-  isTextGraded: boolean;
-  status: AttemptStatus;
-};
-
-type GradingQuestion = {
-  answerId: string;
-  questionId: string;
-  questionTitle: string;
-  maxPoints: number;
-  textAnswer: string;
-  awardedPoints: number;
-};
-
-type FetchTextAnswersResponse = {
-  success: true;
-  data: {
-    attemptId: string;
-    candidateName: string;
-    currentScore: number;
-    textAnswers: GradingQuestion[];
-  };
-};
-
-type GradeTextAnswersResponse = {
-  success: true;
-  data: {
-    score: number;
-  };
-};
-
-type CandidateRankingDialogProps = {
-  examId: string;
-  examTitle: string;
-  candidates: CandidateRow[];
-};
-
-const toSubmissionMethodLabel = (status: AttemptStatus) => {
-  if (status === "SUBMITTED") {
-    return "Manual Submit";
-  }
-
-  if (status === "TIMED_OUT") {
-    return "Timeout";
-  }
-
-  if (status === "VIOLATION_TERMINATED") {
-    return "Violation";
-  }
-
-  return "In Progress";
-};
-
-const toClampedScore = (value: string, maxPoints: number) => {
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(maxPoints, parsed));
-};
+import type {
+  CandidateFilter,
+  CandidateRankingDialogProps,
+  CandidateRow,
+  FetchTextAnswersResponse,
+  GradeTextAnswersResponse,
+  GradingQuestion,
+} from "@/types/employer/candidateRanking";
 
 export function CandidateRankingDialog({ examId, examTitle, candidates }: CandidateRankingDialogProps) {
-  const [filter, setFilter] = useState<"ALL" | "GRADED" | "UNGRADED">("ALL");
+  const [filter, setFilter] = useState<CandidateFilter>("ALL");
   const [candidateRows, setCandidateRows] = useState<CandidateRow[]>(candidates);
   const [gradingTarget, setGradingTarget] = useState<CandidateRow | null>(null);
   const [isGradeDialogOpen, setIsGradeDialogOpen] = useState(false);

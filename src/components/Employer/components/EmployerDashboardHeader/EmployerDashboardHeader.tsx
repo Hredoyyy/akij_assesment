@@ -4,11 +4,7 @@ import Link from "next/link";
 
 import { DashboardSearchBar } from "@/components/Shared/DashboardSearchBar/DashboardSearchBar";
 import { Button } from "@/components/ui/button";
-
-type EmployerDashboardHeaderProps = {
-  search: string;
-  onSearchChange: (value: string) => void;
-};
+import type { EmployerDashboardHeaderProps } from "@/types/employer/components";
 
 export function EmployerDashboardHeader({ search, onSearchChange }: EmployerDashboardHeaderProps) {
   return (

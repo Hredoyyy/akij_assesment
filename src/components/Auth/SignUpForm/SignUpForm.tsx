@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { getDashboardPathByRole } from "@/lib/routes";
 import { signUpSchema } from "@/actions/Auth/signUp/schema";
+import type { AuthApiResponse } from "@/types/auth/forms";
 
 const signUpFormSchema = signUpSchema.extend({
   confirmPassword: z.string().min(8, "Confirm password is required."),
@@ -18,16 +19,6 @@ const signUpFormSchema = signUpSchema.extend({
 });
 
 type SignUpValues = z.infer<typeof signUpFormSchema>;
-
-type AuthApiResponse = {
-  success: true;
-  data: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: "EMPLOYER" | "CANDIDATE";
-  };
-};
 
 export function SignUpForm() {
   const router = useRouter();

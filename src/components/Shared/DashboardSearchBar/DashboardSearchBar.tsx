@@ -4,14 +4,7 @@ import Image from "next/image";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-type DashboardSearchBarProps = {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  inputClassName?: string;
-};
+import type { DashboardSearchBarProps } from "@/types/shared/components";
 
 export function DashboardSearchBar({
   value,

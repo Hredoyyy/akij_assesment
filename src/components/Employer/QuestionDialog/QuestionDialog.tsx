@@ -22,49 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/Shared/RichTextEditor/RichTextEditor";
+import { extractPlainText, makeOption } from "@/lib/employer/questionDialog";
+import type { LocalOption, QuestionDialogProps, QuestionInput } from "@/types/employer/questionDialog";
 import type { DraftQuestionType } from "@/stores/examDraftStore";
-
-type QuestionInput = {
-  title: string;
-  type: DraftQuestionType;
-  points: number;
-  options: Array<{ text: string; isCorrect: boolean }>;
-};
-
-type QuestionDialogProps = {
-  onSave: (question: QuestionInput) => Promise<void>;
-  triggerLabel?: string;
-  triggerVariant?: "default" | "outline" | "ghost";
-  triggerSize?: "default" | "sm";
-  triggerClassName?: string;
-  dialogTitle?: string;
-  dialogDescription?: string;
-  submitLabel?: string;
-  showSaveAndAddMore?: boolean;
-  initialQuestion?: QuestionInput;
-};
-
-type LocalOption = {
-  id: string;
-  text: string;
-  isCorrect: boolean;
-};
-
-const makeOption = (isCorrect = false): LocalOption => ({
-  id: crypto.randomUUID(),
-  text: "",
-  isCorrect,
-});
-
-const extractPlainText = (value: string) => {
-  if (typeof window === "undefined") {
-    return value.trim();
-  }
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(value, "text/html");
-  return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
-};
 
 export function QuestionDialog({
   onSave,
@@ -393,13 +353,13 @@ export function QuestionDialog({
           <div className="space-y-4 pt-1">
             <div className="h-px w-full bg-slate-200" />
 
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
               <Button
                 variant="outline"
                 type="button"
                 onClick={submit}
                 disabled={isSaving}
-                className="h-12 w-[180px] rounded-xl border-primary text-base font-semibold text-primary hover:bg-primary/5"
+                className="h-12 w-full rounded-xl border-primary text-base font-semibold text-primary hover:bg-primary/5 sm:w-[180px]"
               >
                 {isSaving ? "Saving..." : submitLabel}
               </Button>
@@ -409,7 +369,7 @@ export function QuestionDialog({
                   type="button"
                   onClick={submitAndAddMore}
                   disabled={isSaving}
-                  className="h-12 w-[180px] rounded-xl text-base font-semibold"
+                  className="h-12 w-full rounded-xl text-base font-semibold sm:w-[180px]"
                 >
                   {isSaving ? "Saving..." : "Save & Add More"}
                 </Button>

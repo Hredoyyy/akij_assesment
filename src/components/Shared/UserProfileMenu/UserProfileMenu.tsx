@@ -3,24 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import type { SessionUser } from "@/types/auth";
-
-type UserProfileMenuProps = {
-  user: SessionUser;
-};
-
-function getInitials(name: string | null, email: string): string {
-  if (name) {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 1) {
-      return parts[0].slice(0, 2).toUpperCase();
-    }
-
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  return email.slice(0, 2).toUpperCase();
-}
+import { getInitials } from "@/lib/shared/userProfile";
+import type { UserProfileMenuProps } from "@/types/shared/components";
 
 export function UserProfileMenu({ user }: UserProfileMenuProps) {
   const router = useRouter();

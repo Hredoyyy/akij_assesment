@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
-
-type UseBehaviorTrackingOptions = {
-  enabled: boolean;
-  onViolation: () => Promise<void> | void;
-};
+import { useCallback, useEffect, useRef } from "react";
+import type { UseBehaviorTrackingOptions } from "@/types/hooks";
 
 export function useBehaviorTracking({ enabled, onViolation }: UseBehaviorTrackingOptions) {
+  const hasEnteredFullscreenRef = useRef(
+    typeof document !== "undefined" ? Boolean(document.fullscreenElement) : false,
+  );
+
   const reportViolation = useCallback(() => {
     void onViolation();
   }, [onViolation]);
@@ -28,7 +28,12 @@ export function useBehaviorTracking({ enabled, onViolation }: UseBehaviorTrackin
     };
 
     const onFullscreenChange = () => {
-      if (!document.fullscreenElement) {
+      if (document.fullscreenElement) {
+        hasEnteredFullscreenRef.current = true;
+        return;
+      }
+
+      if (hasEnteredFullscreenRef.current) {
         reportViolation();
       }
     };

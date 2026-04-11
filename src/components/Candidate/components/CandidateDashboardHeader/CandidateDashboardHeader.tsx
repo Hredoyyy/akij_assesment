@@ -1,11 +1,7 @@
 "use client";
 
 import { DashboardSearchBar } from "@/components/Shared/DashboardSearchBar/DashboardSearchBar";
-
-type CandidateDashboardHeaderProps = {
-  search: string;
-  onSearchChange: (value: string) => void;
-};
+import type { CandidateDashboardHeaderProps } from "@/types/candidate/components";
 
 export function CandidateDashboardHeader({ search, onSearchChange }: CandidateDashboardHeaderProps) {
   return (

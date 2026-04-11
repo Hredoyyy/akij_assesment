@@ -11,18 +11,9 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { getDashboardPathByRole } from "@/lib/routes";
 import { signInSchema } from "@/actions/Auth/signIn/schema";
+import type { AuthApiResponse } from "@/types/auth/forms";
 
 type SignInValues = z.infer<typeof signInSchema>;
-
-type AuthApiResponse = {
-  success: true;
-  data: {
-    id: string;
-    email: string;
-    name: string | null;
-    role: "EMPLOYER" | "CANDIDATE";
-  };
-};
 
 export function SignInForm() {
   const router = useRouter();

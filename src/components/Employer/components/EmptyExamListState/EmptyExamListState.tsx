@@ -1,9 +1,5 @@
 import Image from "next/image";
-
-type EmptyExamListStateProps = {
-  title: string;
-  description: string;
-};
+import type { EmptyExamListStateProps } from "@/types/employer/components";
 
 export function EmptyExamListState({ title, description }: EmptyExamListStateProps) {
   return (

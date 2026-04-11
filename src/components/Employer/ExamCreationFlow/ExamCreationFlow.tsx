@@ -20,56 +20,14 @@ import {
 } from "@/components/ui/select";
 import {
   useExamDraftStore,
-  type DraftSlot,
 } from "@/stores/examDraftStore";
-
-type CreateExamResponse = {
-  success: true;
-  data: {
-    examId: string;
-  };
-};
-
-type ExistingExamDraft = {
-  examId: string;
-  basicInfo: {
-    title: string;
-    totalCandidates: number;
-    totalSlots: number;
-    duration: number;
-    negativeMarking: boolean;
-  };
-  slots: Array<{
-    slotNumber: number;
-    startTime: string;
-    endTime: string;
-    questions: Array<{
-      title: string;
-      type: "CHECKBOX" | "RADIO" | "TEXT";
-      points: number;
-      options: Array<{ text: string; isCorrect: boolean }>;
-    }>;
-  }>;
-};
-
-type QuestionPersistInput = {
-  title: string;
-  type: "CHECKBOX" | "RADIO" | "TEXT";
-  points: number;
-  options: Array<{ text: string; isCorrect: boolean }>;
-};
-
-type ExamCreationFlowProps = {
-  mode: "new" | "edit";
-  initialDraft?: ExistingExamDraft;
-};
-
-const toSlotDatetime = (value: string) => {
-  if (!value) {
-    return "";
-  }
-  return new Date(value).toISOString();
-};
+import { toSlotDatetime } from "@/lib/employer/examCreation";
+import type {
+  CreateExamResponse,
+  EmployerDraftSlot,
+  ExamCreationFlowProps,
+  QuestionPersistInput,
+} from "@/types/employer/examCreation";
 
 export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) {
   const router = useRouter();
@@ -194,7 +152,7 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
     slotsOverride,
   }: {
     exitAfterSave: boolean;
-    slotsOverride?: DraftSlot[];
+    slotsOverride?: EmployerDraftSlot[];
   }) => {
     setRequestError(null);
 
@@ -546,10 +504,10 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
           </section>
 
           <section className="mx-auto mt-6 w-full max-w-[954px] rounded-2xl bg-white p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               <Button
                 variant="outline"
-                className="h-12 min-w-[180px] rounded-xl text-base font-semibold"
+                className="h-12 w-full rounded-xl text-base font-semibold sm:w-auto sm:min-w-[180px]"
                 onClick={() => {
                   resetDraft();
                   router.push("/employer/dashboard");
@@ -558,7 +516,7 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
                 Cancel
               </Button>
               <Button
-                className="h-12 min-w-[180px] rounded-xl text-base font-semibold"
+                className="h-12 w-full rounded-xl text-base font-semibold sm:w-auto sm:min-w-[180px]"
                 disabled={basicInfoMode === "edit" ? !canContinue || isSubmitting : isSubmitting}
                 onClick={() => {
                   if (basicInfoMode === "view") {
@@ -621,4 +579,4 @@ export function ExamCreationFlow({ mode, initialDraft }: ExamCreationFlowProps) 
   );
 }
 
-export type EmployerDraftSlot = DraftSlot;
+export type { EmployerDraftSlot } from "@/types/employer/examCreation";
