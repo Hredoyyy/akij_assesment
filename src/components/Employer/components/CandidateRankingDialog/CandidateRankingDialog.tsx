@@ -263,7 +263,18 @@ export function CandidateRankingDialog({ examId, examTitle, candidates }: Candid
 
         <div className="max-h-[60vh] space-y-4 overflow-y-auto px-6 py-5">
           {isLoadingTextAnswers ? (
-            <p className="text-sm text-slate-600">Loading text answers...</p>
+            <div className="space-y-4 animate-pulse">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <article key={index} className="rounded-xl border border-[#E5E7EB] bg-white p-4">
+                  <div className="space-y-3">
+                    <div className="h-4 w-28 rounded bg-slate-200" />
+                    <div className="h-4 w-3/4 rounded bg-slate-100" />
+                    <div className="h-16 rounded-lg bg-slate-100" />
+                    <div className="h-10 w-40 rounded bg-slate-200" />
+                  </div>
+                </article>
+              ))}
+            </div>
           ) : gradingQuestions.length === 0 ? (
             <p className="text-sm text-slate-600">No text answers found for this attempt.</p>
           ) : (
